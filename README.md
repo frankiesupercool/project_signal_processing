@@ -3,8 +3,8 @@
 ## Questions
 
 - Length of the seminar paper presentation?
-  - Answer:
+  - Answer: approx. 40min
 - Presentation length of project?
   - Answer:
 - Length of lab report?
-  - Answer:
+  - Answer: content conference paper but style basic report
