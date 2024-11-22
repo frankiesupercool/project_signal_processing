@@ -6,6 +6,8 @@ from torch.utils.data import Dataset
 from denoiser import pretrained
 from denoiser.dsp import convert_audio
 import numpy as np
+import matplotlib.pyplot as plt
+import sys
 
 class LRS3WithNoiseDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
@@ -195,39 +197,6 @@ class LRS3WithNoiseDataset(Dataset):
 
         return sample
 
-# Instantiate the dataset with appropriate parameters
-dataset = LRS3WithNoiseDataset(
-    lrs3_root='../data/pretrain',
-    dns_root='../noise_data_set/noise',
-    snr_db=30,
-    sample_rate=16000,
-    mode_prob={'speaker': 0.5, 'noise': 0.5}
-)
-
-# Access a single sample
-sample = dataset[1]
-
-# Print the keys of the sample dictionary
-print("Sample Keys:", sample.keys())
-
-# Inspect individual components
-print("Encoded Audio Shape:", sample['encoded_audio'].shape)
-print("Mixture Shape:", sample['mixture'].shape)
-print("Clean Speech Shape:", sample['clean_speech'].shape)
-print("Interference Shape:", sample['interference'].shape)
-print("Interference Type:", sample['interference_type'])
-print("File Path:", sample['file_path'])
-
-
-import torch
-import torchaudio
-import matplotlib.pyplot as plt
-import os
-import sys
-
-# Assuming your dataset class is already defined and imported
-# from your_module import LRS3WithNoiseDataset
-
 # Initialize the dataset
 dataset = LRS3WithNoiseDataset(
     lrs3_root='../data/pretrain',
@@ -290,3 +259,15 @@ try:
     save_and_play_mixture(sample, sample_index)
 except Exception as e:
     print(f"An error occurred while processing sample {sample_index}: {e}")
+
+sample = dataset[1]
+# Print the keys of the sample dictionary
+print("Sample Keys:", sample.keys())
+
+# Inspect individual components
+print("Encoded Audio Shape:", sample['encoded_audio'].shape)
+print("Mixture Shape:", sample['mixture'].shape)
+print("Clean Speech Shape:", sample['clean_speech'].shape)
+print("Interference Shape:", sample['interference'].shape)
+print("Interference Type:", sample['interference_type'])
+print("File Path:", sample['file_path'])
