@@ -11,8 +11,6 @@ from utils.device_utils import get_device, set_seed
 """
 Preprocessing the audio using the encoder of the denoiser model in 
 https://github.com/facebookresearch/denoiser
-
-
 """
 
 class AudioPreprocessDataset(Dataset):
