@@ -90,14 +90,14 @@ class LRS3WithNoiseDataset(Dataset):
         device = speech.device
 
         # Calculate power of speech and interference
-        speech_power = speech.norm(p=2)
-        interference_power = interference.norm(p=2)
+        speech_power = (speech.norm(p=2)) ** 2
+        interference_power = (interference.norm(p=2))**2
 
         if interference_power == 0:
             raise ValueError("Interference power is zero, cannot compute scaling factor.")
 
         # Calculate the scaling factor for interference to achieve desired SNR
-        snr_linear = 10 ** (snr_db / 20)
+        snr_linear = 10 ** (snr_db / 10)
         scaling_factor = speech_power / (interference_power * snr_linear)
 
         # Scale interference and mix
