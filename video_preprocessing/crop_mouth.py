@@ -104,7 +104,7 @@ class VideoCrop:
                         out.write(gray)
 
                         # Detect faces
-                        faces = detector(gray)
+                        faces = self.detector(gray)
 
                         for face in faces:
                             landmarks = predictor(gray, face)
