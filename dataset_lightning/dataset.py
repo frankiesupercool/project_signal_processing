@@ -127,22 +127,23 @@ class PreprocessingDataset(Dataset):
 
         return mixed
 
-    def __getitem__(self, idx):
-        # Read the file path from the text file
-        lrs3_file = linecache.getline(self.lrs3_files_list, idx + 1).strip()
-        # Load clean speech from LRS3
-        speech_waveform, orig_sample_rate = torchaudio.load(lrs3_file)
-        speech_waveform = torchaudio.functional.resample(speech_waveform, orig_freq=orig_sample_rate,
-                                                         new_freq=self.sample_rate)
-        speech_waveform = speech_waveform.squeeze(0)  # Assuming mono; adjust if stereo
+    def _get_random_file_from_speaker(self, speaker_id):
+        """
+        Selects a random audio file from the given speaker.
 
-        # Pad or truncate speech waveform to fixed length
-        speech_waveform = self.pad_or_truncate(speech_waveform, self.fixed_length)
+        Args:
+            speaker_id (str): The ID of the speaker.
 
-        # Decide randomly whether to add another speaker or noise
-        mode = random.choices(['speaker', 'noise'], weights=[self.mode_prob.get('speaker', 0.5),
-                                                             self.mode_prob.get('noise', 0.5)])[0]
+        Returns:
+            str: Path to the selected audio file.
+        """
+        speaker_dir = os.path.join(self.lrs3_root, speaker_id)
+        files = [os.path.join(speaker_dir, f) for f in os.listdir(speaker_dir) if f.lower().endswith('.wav')]
+        if not files:
+            raise ValueError(f"No files found for speaker {speaker_id}")
+        return random.choice(files)
 
+    def _create_interfering_waveform(self, mode, lrs3_file=None):
         if mode == 'speaker':
             # Speaker Separation: Add speech from another speaker
             clean_speaker_id = self._extract_speaker_id(lrs3_file)
@@ -180,6 +181,22 @@ class PreprocessingDataset(Dataset):
         else:
             raise ValueError("Invalid mode selected.")
 
+        return interfering_waveform, interference_type
+
+    def _preprocess_audio(self, lrs3_file):
+        # Load clean speech from LRS3
+        speech_waveform, orig_sample_rate = torchaudio.load(lrs3_file)
+        speech_waveform = torchaudio.functional.resample(speech_waveform, orig_freq=orig_sample_rate,
+                                                         new_freq=self.sample_rate)
+        speech_waveform = speech_waveform.squeeze(0)  # Assuming mono; adjust if stereo
+
+        # Pad or truncate speech waveform to fixed length
+        speech_waveform = self.pad_or_truncate(speech_waveform, self.fixed_length)
+
+        # Decide randomly whether to add another speaker or noise
+        mode = random.choices(['speaker', 'noise'], weights=[self.mode_prob.get('speaker', 0.5),
+                                                             self.mode_prob.get('noise', 0.5)])[0]
+        interfering_waveform, interference_type = self._create_interfering_waveform(mode, lrs3_file=lrs3_file)
         # Mix speech and interference at desired SNR
         mixture = self.add_noise_with_snr(speech_waveform, interfering_waveform, self.snr_db)
 
@@ -195,9 +212,14 @@ class PreprocessingDataset(Dataset):
         # Remove batch dimension after encoding
         encoded_audio = encoded_audio.squeeze(0)  # Shape: [channels, encoded_length]
 
-        # Apply any transformations
-        if self.transform:
-            encoded_audio = self.transform(encoded_audio)
+        return encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type
+
+
+    def __getitem__(self, idx):
+        # Read the file path from the text file
+        lrs3_file = linecache.getline(self.lrs3_files_list, idx + 1).strip()
+
+        encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(lrs3_file)
 
         sample = {
             'encoded_audio': encoded_audio,                 # Shape: [channels, encoded_length]
@@ -210,18 +232,3 @@ class PreprocessingDataset(Dataset):
 
         return sample
 
-    def _get_random_file_from_speaker(self, speaker_id):
-        """
-        Selects a random audio file from the given speaker.
-
-        Args:
-            speaker_id (str): The ID of the speaker.
-
-        Returns:
-            str: Path to the selected audio file.
-        """
-        speaker_dir = os.path.join(self.lrs3_root, speaker_id)
-        files = [os.path.join(speaker_dir, f) for f in os.listdir(speaker_dir) if f.lower().endswith('.wav')]
-        if not files:
-            raise ValueError(f"No files found for speaker {speaker_id}")
-        return random.choice(files)
