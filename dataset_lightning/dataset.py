@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from denoiser import pretrained
 import linecache  # Import linecache for reading specific lines from files
 
-from lipreading_preprocessing.main import LipreadingPreprocessing
+from video_encoding.main import LipreadingPreprocessing
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
 
 

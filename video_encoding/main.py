@@ -1,7 +1,7 @@
-from lipreading_preprocessing.model import Lipreading
 import torch
 
-from lipreading_preprocessing.utils import load_model
+from video_encoding.model import Lipreading
+from video_encoding.utils import load_model
 
 
 class LipreadingPreprocessing:

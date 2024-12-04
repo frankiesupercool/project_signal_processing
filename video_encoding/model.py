@@ -3,9 +3,6 @@ import torch.nn as nn
 import math
 import numpy as np
 from models.resnet import ResNet, BasicBlock
-from models.resnet1D import ResNet1D, BasicBlock1D
-from models.shufflenetv2 import ShuffleNetV2
-from models.tcn import MultibranchTemporalConvNet, TemporalConvNet
 from models.densetcn import (DenseTemporalConvNet)
 from models.swish import Swish
 
