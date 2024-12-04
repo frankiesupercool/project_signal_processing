@@ -45,16 +45,8 @@ def test_trainer():
     lrs3_root = '../data/pretrain'  # Replace with actual path
     dns_root = '../noise_data_set/noise'
     # Initialize the DataModule
-    data_module = DataModule(
-        lrs3_root=lrs3_root,
-        dns_root=dns_root,
-        snr_db=0,
-        transform=None,
-        sample_rate=16000,
-        mode_prob={'speaker': 0.5, 'noise': 0.5},
-        batch_size=4,
-        num_workers=0  # Start with 0 for testing
-    )
+    data_module = DataModule(lrs3_root=lrs3_root, dns_root=dns_root, snr_db=0, transform=None, sample_rate=16000,
+                             mode_prob={'speaker': 0.5, 'noise': 0.5}, batch_size=4, num_workers=0)
 
     # Prepare the DataModule
     data_module.setup()

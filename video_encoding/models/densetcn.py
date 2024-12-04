@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from collections import OrderedDict
-from swish import Swish
 
+from lipreading_preprocessing.models.se_module import SELayer
+from lipreading_preprocessing.models.swish import Swish
 
 
 class Chomp1d(nn.Module):
@@ -46,7 +46,6 @@ class _ConvBatchChompRelu(nn.Module):
 
         for k_idx,k in enumerate( kernel_size_set ):
             if se_module:
-                from lipreading.models.se_module import SELayer
                 setattr( self, 'cbcr0_se_{}'.format(k_idx), SELayer( n_inputs, reduction=16))
             cbcr = TemporalConvLayer( n_inputs, self.n_outputs_branch, k, stride, dilation, (k-1)*dilation, relu_type)
             setattr( self,'cbcr0_{}'.format(k_idx), cbcr )

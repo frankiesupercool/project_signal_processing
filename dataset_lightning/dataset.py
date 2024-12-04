@@ -4,15 +4,15 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 from denoiser import pretrained
-from denoiser.dsp import convert_audio
-import numpy as np
-import matplotlib.pyplot as plt
-import sys
 import linecache  # Import linecache for reading specific lines from files
 
+from lipreading_preprocessing.main import LipreadingPreprocessing
+from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
+
+
 class PreprocessingDataset(Dataset):
-    def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000):
+    def __init__(self, lrs3_root, dns_root, densetcn_options,  allow_size_mismatch, backbone_type,use_boundary, relu_type,num_classes, model_path, snr_db=0, transform=None,
+                 sample_rate=16000, mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000):
         """
         Args:
             lrs3_root (str): Path to the LRS3 dataset root directory.
@@ -22,7 +22,15 @@ class PreprocessingDataset(Dataset):
             sample_rate (int): Desired sample rate for audio files.
             mode_prob (dict): Probability distribution for selecting mode. Keys should be 'speaker' and 'noise'.
             fixed_length (int): Fixed length in samples for audio waveforms (e.g., 64000 samples for 4 seconds at 16kHz).
+            :param mismatch:
+            :param type1:
+            :param boundary:
+            :param type2:
+            :param classes:
+            :param path:
         """
+
+        #intitialise Audio
         self.lrs3_root = lrs3_root
         self.dns_root = dns_root
         self.snr_db = snr_db
@@ -30,6 +38,15 @@ class PreprocessingDataset(Dataset):
         self.sample_rate = sample_rate
         self.mode_prob = mode_prob
         self.fixed_length = fixed_length  # Fixed length for audio samples
+
+        # Initialise Video
+        self.densetcn_options = densetcn_options
+        self.allow_size_mismatch = allow_size_mismatch
+        self.backbone_type = backbone_type
+        self.use_boundary = use_boundary
+        self.relu_type = relu_type
+        self.num_classes = num_classes
+        self.model_path = model_path
 
         # Load the pretrained denoiser model
         self.model = pretrained.dns64()
@@ -53,6 +70,16 @@ class PreprocessingDataset(Dataset):
 
         if len(self.speakers) < 2:
             raise ValueError("Need at least two speakers in LRS3 dataset for speaker separation.")
+
+        self.lipreading_preprocessing = LipreadingPreprocessing(
+            allow_size_mismatch,
+            model_path,
+            use_boundary,
+            relu_type,
+            num_classes,
+            backbone_type,
+            densetcn_options)
+        self.video_processor = VideoPreprocessorSimple()
 
     def _write_file_list(self, root_dir, output_file, file_extension='.wav'):
         with open(output_file, 'w') as f:
@@ -215,9 +242,19 @@ class PreprocessingDataset(Dataset):
         return encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type
 
 
+    def _preprocess_video(self, file_path: str):
+        return self.lipreading_preprocessing.generate_encodings(self.video_processor.crop_video_96_96(file_path))
+
+
     def __getitem__(self, idx):
         # Read the file path from the text file
         lrs3_file = linecache.getline(self.lrs3_files_list, idx + 1).strip()
+        #TODO do better but right now just splitting by the last point and replacing the .wav with .mp4
+        lrs3_file_video = linecache.getline(self.lrs3_files_list, idx + 1).strip().split(".")
+        lrs3_file_video.pop(len(lrs3_file_video) - 1)
+
+        encoded_video = self._preprocess_video(''.join(lrs3_file_video))
+
 
         encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(lrs3_file)
 
@@ -227,7 +264,8 @@ class PreprocessingDataset(Dataset):
             'clean_speech': speech_waveform.unsqueeze(0),   # Shape: [1, samples]
             'interference': interfering_waveform.unsqueeze(0),  # Shape: [1, samples]
             'interference_type': interference_type,
-            'file_path': lrs3_file
+            'file_path': lrs3_file,
+            'video': encoded_video,
         }
 
         return sample
