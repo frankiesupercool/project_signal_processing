@@ -8,29 +8,25 @@ class VideoPreprocessorSimple:
         pass
 
     def crop_video_96_96(self, video_path):
-        print(video_path)
         cap = cv2.VideoCapture(video_path)
-        fps = cap.get(cv2.CAP_PROP_FPS)
 
-        print("here")
         sequence = []
-        fourcc = cv2.VideoWriter.fourcc(*'mp4v')
-        out = cv2.VideoWriter("test_done.mp4", fourcc, fps, (96, 96), isColor=False)
+        #fourcc = cv2.VideoWriter.fourcc(*'mp4v')
+        #out = cv2.VideoWriter("test_done.mp4", fourcc, fps, (96, 96), isColor=False)
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
-            print(".")
 
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             cropped_frame = self._crop_center(gray, 96, 96)
             sequence.append(cropped_frame)
 
-            out.write(cropped_frame)
+            #out.write(cropped_frame)
 
         cap.release()
-        out.release()
+        #out.release()
         cv2.destroyAllWindows()
 
         return np.asarray(sequence)

@@ -4,7 +4,7 @@ from video_encoding.model import Lipreading
 from video_encoding.utils import load_model
 from utils.device_utils import get_device
 
-device = get_device()
+device = torch.device("cpu")
 
 class LipreadingPreprocessing:
 
@@ -35,7 +35,7 @@ class LipreadingPreprocessing:
         # Define model parameters form json lrw_resnet18_dctcn_boundary.json
         backbone_type = "resnet"
         relu_type = "swish"
-        use_boundary = True
+        use_boundary = False
 
 
         # Initialise Model

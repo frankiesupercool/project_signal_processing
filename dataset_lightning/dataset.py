@@ -361,20 +361,14 @@ def test_preprocessing_dataset():
 
         # Extract batch components
         encoded_audio = sample_batch['encoded_audio']        # Shape: [batch_size, channels, encoded_length]
-        mixture = sample_batch['mixture']                    # Shape: [batch_size, 1, samples]
-        clean_speech = sample_batch['clean_speech']          # Shape: [batch_size, 1, samples]
-        interference = sample_batch['interference']          # Shape: [batch_size, 1, samples]
-        interference_type = sample_batch['interference_type']  # Shape: [batch_size]
+        encoded_video = sample_batch['encoded_video']        # Shape: [batch_size, channels, encoded_length]
+        clean_speech = sample_batch['clean_speech']          # Shape: [batch_size, 1, samples]         # Shape: [batch_size, 1, samples]
         audio_file_paths = sample_batch['audio_file_path']   # List of file paths
-        video_sequences = sample_batch['video_sequence']      # Shape: [batch_size, frames, 96, 96]
+        video_file_paths = sample_batch['video_file_path']      # Shape: [batch_size, frames, 96, 96]
 
         # Print shapes and types
         print(f"Encoded Audio Shape: {encoded_audio.shape}")
-        print(f"Mixture Shape: {mixture.shape}")
         print(f"Clean Speech Shape: {clean_speech.shape}")
-        print(f"Interference Shape: {interference.shape}")
-        print(f"Interference Type: {interference_type}")
-        print(f"Video Sequence Shape: {video_sequences.shape}")
 
         # Verify that audio and video files correspond
         for i in range(len(audio_file_paths)):
@@ -388,11 +382,11 @@ def test_preprocessing_dataset():
                 print(f"Audio: {audio_path} <--> Video: {video_path}")
 
         # (Optional) Visualize the first sample in the batch
-        visualize_sample(
-            sample_batch,
-            index=0,
-            audio_sample_rate=dataset.sample_rate
-        )
+        #visualize_sample(
+            #sample_batch,
+            #index=0,
+            #audio_sample_rate=dataset.sample_rate
+        #)
 
         # For testing purposes, we'll just process one batch
         break
@@ -408,8 +402,7 @@ def visualize_sample(sample_batch, index=0, audio_sample_rate=16000):
     """
     import numpy as np
 
-    # Extract sample data
-    mixture = sample_batch['mixture'][index].squeeze().numpy()           # Shape: [samples]
+    # Extract sample data         # Shape: [samples]
     clean_speech = sample_batch['clean_speech'][index].squeeze().numpy() # Shape: [samples]
     interference = sample_batch['interference'][index].squeeze().numpy() # Shape: [samples]
     video_sequence = sample_batch['video_sequence'][index].numpy()       # Shape: [frames, 96, 96]
@@ -422,11 +415,6 @@ def visualize_sample(sample_batch, index=0, audio_sample_rate=16000):
     # Plot audio waveforms
     plt.figure(figsize=(15, 6))
 
-    plt.subplot(3, 1, 1)
-    plt.title("Mixture Waveform")
-    plt.plot(mixture)
-    plt.xlabel("Samples")
-    plt.ylabel("Amplitude")
 
     plt.subplot(3, 1, 2)
     plt.title("Clean Speech Waveform")
