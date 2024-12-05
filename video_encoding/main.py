@@ -2,7 +2,9 @@ import torch
 
 from video_encoding.model import Lipreading
 from video_encoding.utils import load_model
+from utils.device_utils import get_device
 
+device = get_device()
 
 class LipreadingPreprocessing:
 
@@ -41,7 +43,7 @@ class LipreadingPreprocessing:
                            densetcn_options=self.densetcn_options,
                            backbone_type=backbone_type,
                            relu_type=relu_type,
-                           use_boundary=use_boundary).cuda()
+                           use_boundary=use_boundary).to(device)
         print(self.model)
 
     def extract_feats(self, model, data):
@@ -52,10 +54,10 @@ class LipreadingPreprocessing:
         # preprocessing_func = get_preprocessing_pipelines()['test']
         # data = preprocessing_func(np.load(args.mouth_patch_path)['data'])  # data: TxHxW
 
-        return model(torch.FloatTensor(data)[None, None, :, :, :].cuda(), lengths=[data.shape[0]])
+        return model(torch.FloatTensor(data)[None, None, :, :, :].to(device), lengths=[data.shape[0]])
 
     def generate_encodings(self, data):
-        return self.extract_feats(self.model, data).cuda().detach().numpy()
+        return self.extract_feats(self.model, data).to(device).detach().numpy()
 
 
 '''
