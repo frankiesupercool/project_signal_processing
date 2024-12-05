@@ -2,13 +2,10 @@ import torch
 import torch.nn as nn
 import math
 import numpy as np
-from models.resnet import ResNet, BasicBlock
-from models.densetcn import (DenseTemporalConvNet)
-from models.swish import Swish
 
-
-
-
+from video_encoding.models.densetcn import DenseTemporalConvNet
+from video_encoding.models.resnet import ResNet, BasicBlock
+from video_encoding.models.swish import Swish
 
 #Unused
 '''

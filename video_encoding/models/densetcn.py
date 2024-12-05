@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 
-from lipreading_preprocessing.models.se_module import SELayer
-from lipreading_preprocessing.models.swish import Swish
+from video_encoding.models.se_module import SELayer
+from video_encoding.models.swish import Swish
 
 
 class Chomp1d(nn.Module):

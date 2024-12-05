@@ -2,7 +2,7 @@
 import math
 import torch.nn as nn
 
-from lipreading_preprocessing.models.swish import Swish
+from video_encoding.models.swish import Swish
 
 
 def conv3x3(in_planes, out_planes, stride=1):

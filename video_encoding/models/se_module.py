@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from lipreading_preprocessing.models.swish import Swish
+from video_encoding.models.swish import Swish
 
 
 def _average_batch( x, lengths):
