@@ -1,0 +1,3 @@
+../noise_data_set/noise/-0A8-330SIo.wav
+../noise_data_set/noise/-0g8EILYVyw.wav
+../noise_data_set/noise/-0bvCUUDHgw.wav

@@ -5,10 +5,7 @@ import random
 function to get the device to improve training speed
 """
 def get_device():
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-        print("Using MPS device")
-    elif torch.cuda.is_available():
+    if torch.cuda.is_available():
         device = torch.device("cuda")
         print("Using CUDA device")
     else:

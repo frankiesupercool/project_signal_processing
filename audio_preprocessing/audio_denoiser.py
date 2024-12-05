@@ -11,7 +11,6 @@ model = pretrained.dns64()
 encoder = model.encoder.to(device)
 decoder = model.decoder
 
-print(model.encoder)
 
 wav, sr = torchaudio.load('../data/pretrain/aySy3tSYGYw/00001.wav')
 wav = convert_audio(wav, sr, model.sample_rate, model.chin)
@@ -27,8 +26,7 @@ for layer in encoder:
     encoded_wav = layer(encoded_wav)
 
 # encoded_wav now contains the encoded representation of your audio
-print(encoded_wav.shape)
-print(encoded_wav)
+
 
 
 
