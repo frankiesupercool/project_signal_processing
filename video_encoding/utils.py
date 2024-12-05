@@ -144,7 +144,7 @@ def load_model(load_path, model, optimizer = None, allow_size_mismatch = False):
 
     # -- load dictionary
     assert os.path.isfile( load_path ), "Error when loading the model, provided path not found: {}".format( load_path )
-    checkpoint = torch.load(load_path)
+    checkpoint = torch.load(load_path, map_location=torch.device('cpu'), weights_only=True)
     loaded_state_dict = checkpoint['model_state_dict']
 
     if allow_size_mismatch:

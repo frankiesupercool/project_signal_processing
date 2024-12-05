@@ -3,9 +3,6 @@ import torch.nn as nn
 import math
 import numpy as np
 from models.resnet import ResNet, BasicBlock
-from models.resnet1D import ResNet1D, BasicBlock1D
-from models.shufflenetv2 import ShuffleNetV2
-from models.tcn import MultibranchTemporalConvNet, TemporalConvNet
 from models.densetcn import (DenseTemporalConvNet)
 from models.swish import Swish
 
@@ -89,19 +86,13 @@ class DenseTCN(nn.Module):
 
 class Lipreading(nn.Module):
     def __init__( self, modality='video',
-                  hidden_dim=256,
                   backbone_type='resnet',
                   num_classes=500,
                   relu_type='prelu',
-                  tcn_options={},
                   densetcn_options={},
-                  width_mult=1.0,
-                  use_boundary=False,
-                  extract_feats=False):
+                  use_boundary=False):
         super(Lipreading, self).__init__()
-        self.extract_feats = extract_feats
         self.backbone_type = backbone_type
-        self.modality = modality
         self.use_boundary = use_boundary
 
         #Standard options for ResNet

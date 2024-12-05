@@ -1,80 +1,64 @@
-
-import os
-import time
-from datetime import datetime
-import logging
-
-from tqdm import tqdm
-
-import torch.nn as nn
-import torch.nn.functional as F
-
-from lipreading_preprocessing.lipreading.mixup import mixup_criterion, mixup_data
-from lipreading_preprocessing.lipreading.model import Lipreading
-from lipreading_preprocessing.lipreading.optim_utils import get_optimizer, CosineScheduler
-from lipreading_preprocessing.lipreading.utils import AverageMeter, showLR, update_logger_batch, calculateNorm2, \
-    load_json, CheckpointSaver, load_model
 import torch
-import numpy as np
 
-from lipreading_preprocessing.lipreading.dataset import pad_packed_collate, MyDataset
-from lipreading_preprocessing.lipreading.preprocess import NormalizeUtterance, Compose, Normalize, RandomCrop, \
-    HorizontalFlip, TimeMask, CenterCrop, AddNoise
+from video_encoding.model import Lipreading
+from video_encoding.utils import load_model
 
 
+class LipreadingPreprocessing:
 
-class LipreadingPreprocessing():
-
-
-    def __init__(self, batch_size: int,
-                 init_epoch: int,
-                 workers:int,
-                 label_path: str,
+    def __init__(self,
+                 allow_size_mismatch: bool,
+                 model_path: str,
+                 use_boundary: bool,
+                 relu_type: str,
                  num_classes: int,
-                 extract_feats: bool,
                  backbone_type: str,
-                 interval: int,
-                 alpha: int,
-                 epochs: int,
-                 config_path: str,
-                 annonation_direc: str,
-                 test: bool,
-                 modality: str,
-                 logging_dir: str,
-                 training_mode: str,
-                 data_dir:str = "test",):
-        self.save_path = None
-        self.lr = None
-        self.training_mode = training_mode
-        self.logging_dir = logging_dir
-        self.use_boundary = None
-        self.relu_type = None
-        self.width_mult = None
-        self.batch_size: int = batch_size
-        self.init_epoch: int = init_epoch
-        self.workers: int = workers
-        self.label_path: str = label_path
-        self.num_classes:int = num_classes
-        self.extract_feats: bool = extract_feats
-        self.data_dir: str = data_dir
-        self.backbone_type: str = backbone_type
-        self.interval: int = interval
-        self.alpha: int = alpha
-        self.epochs: int = epochs
-        self.config_path: str = config_path
-        self.annonation_direc: str = annonation_direc
-        self.test: bool = test
-        self.modality: str = modality
+                 densetcn_options
+                 ):
+        self.allow_size_mismatch = allow_size_mismatch
+        self.model_path = model_path
+        self.use_boundary = use_boundary
+        self.relu_type = relu_type
+        self.num_classes = num_classes
+        self.backbone_type = backbone_type
+        self.densetcn_options = densetcn_options
 
-    def import_weights(self):
-        pass
+        self.create_model()
+        self.model = load_model(self.model_path, self.model, allow_size_mismatch=self.allow_size_mismatch)
 
-    def export_weights(self):
-        pass
 
-    def eval(self):
-        pass
 
+    def create_model(self):
+
+        # Define model parameters form json lrw_resnet18_dctcn_boundary.json
+        backbone_type = "resnet"
+        relu_type = "swish"
+        use_boundary = True
+
+
+        # Initialise Model
+        self.model = Lipreading(num_classes=self.num_classes,
+                           densetcn_options=self.densetcn_options,
+                           backbone_type=backbone_type,
+                           relu_type=relu_type,
+                           use_boundary=use_boundary).cuda()
+        print(self.model)
+
+    def extract_feats(self, model, data):
+        """
+        :rtype: FloatTensor
+        """
+        # model.eval()
+        # preprocessing_func = get_preprocessing_pipelines()['test']
+        # data = preprocessing_func(np.load(args.mouth_patch_path)['data'])  # data: TxHxW
+
+        return model(torch.FloatTensor(data)[None, None, :, :, :].cuda(), lengths=[data.shape[0]])
+
+    def generate_encodings(self, data):
+        return self.extract_feats(self.model, data).cuda().detach().numpy()
+
+
+'''
     def train(self, model, dset_loader, criterion, epoch, optimizer, logger):
         data_time = AverageMeter()
         batch_time = AverageMeter()
@@ -129,7 +113,7 @@ class LipreadingPreprocessing():
 
         return model
 
-
+    
     def get_model_from_json(self):
         assert self.config_path.endswith('.json') and os.path.isfile(self.config_path), \
             f"'.json' config path does not exist. Path input: {self.config_path}"
@@ -167,10 +151,11 @@ class LipreadingPreprocessing():
                             backbone_type=self.backbone_type,
                             relu_type=self.relu_type,
                             width_mult=self.width_mult,
-                            use_boundary=self.use_boundary,
-                            extract_feats=self.extract_feats).cuda()
+                            use_boundary=self.use_boundary).cuda()
         calculateNorm2(model)
         return model
+        
+        
 
     def get_preprocessing_pipelines(self):
         # -- preprocess for the video stream
@@ -265,85 +250,5 @@ class LipreadingPreprocessing():
 
         print(f"{len(dset_loader.dataset)} in total\tCR: {running_corrects / len(dset_loader.dataset)}")
         return running_corrects / len(dset_loader.dataset), running_loss / len(dset_loader.dataset)
+        '''
 
-    def main(self):
-        save_path = self.get_save_folder()
-        ckpt_saver = CheckpointSaver(save_path)
-
-        logger = self.get_logger(save_path)
-
-        #Define model parameters form json lrw_resnet18_dctcn_boundary.json
-        backbone_type = "resnet"
-        width_mult = 1.0
-        relu_type = "swish"
-        use_boundary = True
-        densetcn_options = {'block_config': [3,
-                                             3,
-                                             3,
-                                             3],
-                            'growth_rate_set': [384,
-                                                384,
-                                                384,
-                                                384],
-                            'reduced_size': 512,
-                            'kernel_size_set': [3,
-                                                5,
-                                                7],
-                            'dilation_size_set': [1,
-                                                  2,
-                                                  5],
-                            'squeeze_excitation': True,
-                            'dropout': 0.2,
-                            }
-
-        tcn_options = {}
-        # Initialise Model
-        model = Lipreading( modality=self.modality,
-                        num_classes=self.num_classes,
-                        tcn_options=tcn_options,
-                        densetcn_options=densetcn_options,
-                        backbone_type=backbone_type,
-                        relu_type=relu_type,
-                        width_mult=width_mult,
-                        use_boundary=use_boundary,
-                        extract_feats=self.extract_feats).cuda()
-
-
-
-        #TODO continue refactoring and understanding from here
-
-
-
-        dset_loaders = self.get_data_loaders()
-        # -- get loss function
-        criterion = nn.CrossEntropyLoss()
-        # -- get optimizer
-        optimizer = get_optimizer(self, optim_policies=model.parameters())
-        # -- get learning rate scheduler
-        scheduler = CosineScheduler(self.lr, self.epochs)
-
-        epoch = self.init_epoch
-
-        while epoch < self.epochs:
-            model = self.train(model, dset_loaders['train'], criterion, epoch, optimizer, logger)
-            acc_avg_val, loss_avg_val = self.evaluate(model, dset_loaders['val'], criterion)
-            logger.info(f"{'val'} Epoch:\t{epoch:2}\tLoss val: {loss_avg_val:.4f}\tAcc val:{acc_avg_val:.4f}, LR: {showLR(optimizer)}")
-            # -- save checkpoint
-            save_dict = {
-                'epoch_idx': epoch + 1,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict()
-            }
-            ckpt_saver.save(save_dict, acc_avg_val)
-            scheduler.adjust_lr(optimizer, epoch)
-            epoch += 1
-
-        # -- evaluate best-performing epoch on test partition
-        best_fp = os.path.join(ckpt_saver.save_dir, ckpt_saver.get_best_fn())
-        load_model(best_fp, model)
-        acc_avg_test, loss_avg_test = self.evaluate(model, dset_loaders['test'], criterion)
-        logger.info(f"Test time performance of best epoch: {acc_avg_test} (loss: {loss_avg_test})")
-
-if __name__ == '__main__':
-    lipreading_preprocessing = LipreadingPreprocessing()
-    lipreading_preprocessing.main()
