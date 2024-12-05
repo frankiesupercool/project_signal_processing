@@ -315,7 +315,8 @@ densetcn_options = {'block_config': [3,
                         'dropout': 0.2,
                         }
 
-allow_size_mismatch = Falsemodel_path = "lrw_resnet18_dctcn_video_boundary.pth"
+allow_size_mismatch = False
+model_path = '../video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
 use_boundary = True
 relu_type = "swish"
 num_classes = 500

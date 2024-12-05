@@ -32,7 +32,7 @@ def test_data_module():
                         }
 
     allow_size_mismatch = False
-    model_path = "lrw_resnet18_dctcn_video_boundary.pth"
+    model_path = '../video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
     use_boundary = True
     relu_type = "swish"
     num_classes = 500
