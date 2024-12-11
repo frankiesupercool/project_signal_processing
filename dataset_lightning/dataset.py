@@ -277,6 +277,8 @@ class PreprocessingDataset(Dataset):
         encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
 
+        # Transpose encoded_audio from [batch_size, channels, seq_len] to [batch_size, seq_len, channels]
+        encoded_audio = encoded_audio.permute(0, 2, 1)  # [batch_size, seq_len, channels]
 
         sample = {
             'encoded_audio': encoded_audio,
@@ -288,6 +290,8 @@ class PreprocessingDataset(Dataset):
 
         if self.transform:
             sample = self.transform(sample)
+
+        print(self.encoder)
 
         return sample
 
