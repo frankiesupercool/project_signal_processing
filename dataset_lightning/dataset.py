@@ -278,7 +278,7 @@ class PreprocessingDataset(Dataset):
             audio_lrs3_file)
 
         # Transpose encoded_audio from [batch_size, channels, seq_len] to [batch_size, seq_len, channels]
-        encoded_audio = encoded_audio.permute(0, 2, 1)  # [batch_size, seq_len, channels]
+        encoded_audio = encoded_audio.permute(1, 0)  # [batch_size, seq_len, channels]
 
         sample = {
             'encoded_audio': encoded_audio,
@@ -319,7 +319,7 @@ densetcn_options = {'block_config': [3,
                         'dropout': 0.2,
                         }
 
-allow_size_mismatch = False
+allow_size_mismatch = True  # todo was initially set to True
 model_path = '../video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
 use_boundary = True
 relu_type = "swish"
