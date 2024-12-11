@@ -1,63 +1,6 @@
-# transformer.py
-
-import torch
 import torch.nn as nn
-import numpy as np
-
-
-class PositionalEncoding(nn.Module):
-    """
-    Sinusoidal positional encodings.
-    """
-
-    def __init__(self, d_model, max_len=1024):
-        super(PositionalEncoding, self).__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len).unsqueeze(1).float()
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        if d_model % 2 == 0:
-            pe[:, 1::2] = torch.cos(position * div_term)
-        else:
-            pe[:, 1::2] = torch.cos(position * div_term[:-1])
-        pe = pe.unsqueeze(0)  # Shape: (1, max_len, d_model)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        """
-        Add positional encoding to input tensor.
-        Args:
-            x: Tensor of shape (batch_size, seq_len, d_model)
-        Returns:
-            Tensor with positional encodings added.
-        """
-        x = x + self.pe[:, :x.size(1)]
-        return x
-
-
-class ModalityEncoder(nn.Module):
-    """
-    Encodes and combines audio and video modalities.
-    """
-
-    def __init__(self, audio_dim, video_dim, embed_dim=768):
-        super(ModalityEncoder, self).__init__()
-        self.audio_fc = nn.Linear(audio_dim, embed_dim)
-        self.video_fc = nn.Linear(video_dim, embed_dim)
-
-    def forward(self, encoded_audio, encoded_video):
-        """
-        Args:
-            encoded_audio: Tensor of shape (batch_size, seq_len, audio_dim)
-            encoded_video: Tensor of shape (batch_size, seq_len, video_dim)
-        Returns:
-            Combined tensor of shape (batch_size, total_seq_len, embed_dim)
-        """
-        audio_embed = self.audio_fc(encoded_audio)  # (batch_size, seq_len, embed_dim)
-        video_embed = self.video_fc(encoded_video)  # (batch_size, seq_len, embed_dim)
-        combined = torch.cat((audio_embed, video_embed), dim=1)  # (batch_size, 2*seq_len, embed_dim)
-        return combined
-
+from positional_encoding import PositionalEncoding
+from modality_encoder import ModalityEncoder
 
 class TransformerModel(nn.Module):
     """
@@ -107,7 +50,3 @@ class TransformerModel(nn.Module):
         clean_audio = clean_audio.view(clean_audio.size(0), -1)  # (batch_size, 64000)
 
         return clean_audio
-
-
-
-
