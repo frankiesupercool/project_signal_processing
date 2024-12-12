@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from dataset import PreprocessingDataset  # Ensure correct import path
+from dataset_lightning.dataset import PreprocessingDataset  # Ensure correct import path
 
 
 class DataModule(pl.LightningDataModule):
@@ -69,7 +69,7 @@ class DataModule(pl.LightningDataModule):
         self.num_classes = num_classes
         self.model_path = model_path
 
-        # Placeholders for datasets
+        # Placeholders for x_datasets
         self.pretrain_dataset = None
         self.trainval_dataset = None
         self.test_dataset = None
@@ -85,7 +85,7 @@ class DataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         """
-        Set up datasets for different stages.
+        Set up x_datasets for different stages.
 
         Args:
             stage (str, optional): Stage to set up ('fit', 'validate', 'test', 'predict'). Defaults to None.
