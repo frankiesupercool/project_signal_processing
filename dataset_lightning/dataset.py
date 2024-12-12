@@ -73,8 +73,7 @@ class PreprocessingDataset(Dataset):
             num_classes,
             backbone_type,
             densetcn_options)
-        self.video_processor = VideoPreprocessorSimple()
-
+        self.video_processor = VideoPreprocessorSimple(target_frames=100, fps=25.0)
 
     def _write_paired_file_list(self, root_dir, output_file, audio_ext='.wav', video_ext='.mp4'):
         with open(output_file, 'w') as f:
@@ -276,9 +275,10 @@ class PreprocessingDataset(Dataset):
         # Transpose encoded_audio from [batch_size, channels, seq_len] to [batch_size, seq_len, channels]
         encoded_audio = encoded_audio.permute(1, 0)  # [batch_size, seq_len, channels]
 
+
         sample = {
             'encoded_audio': encoded_audio,
-            'encoded_video': encoded_video,# Shape: [channels, encoded_length]
+            'encoded_video': encoded_video,  # Shape: [100, 96, 96]
             'clean_speech': speech_waveform.unsqueeze(0),  # Shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file

@@ -46,7 +46,9 @@ class VideoPreprocessingService:
                            use_boundary=use_boundary).to(device)
 
     def generate_encodings(self, data):
-        return self.extract_feats(self.model, data).to(device).detach().numpy()
+        encoded = self.extract_feats(self.model, data)
+        print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
+        return encoded.to(device).detach().numpy()
 
     @staticmethod
     def load_model(load_path, model, optimizer=None, allow_size_mismatch=False):
@@ -81,6 +83,11 @@ class VideoPreprocessingService:
 
     @staticmethod
     def extract_feats(model, data):
-        return model(torch.FloatTensor(data)[None, None, :, :, :].to(device), lengths=[data.shape[0]])
+        input_tensor = torch.FloatTensor(data)[None, None, :, :, :].to(device)  # Shape: [1, 1, 100, 96, 96]
+        lengths = [data.shape[0]]
+        output = model(input_tensor, lengths=lengths)
+
+        print(f"Model output shape: {output.shape}")  # Debugging statement
+        return output
 
 
