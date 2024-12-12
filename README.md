@@ -1,5 +1,25 @@
 # project_signal_processing
 
+## Setup
+
+To setup this environment follow the following steps:
+
+- Load your data into the `data/pretrain`, `data/test`, `data/test` folders
+- Add the `lrw_resnet18_dctcn_video_boundary.pth` file to the video_encoding folder
+- start the environment by running
+
+`conda env create -f environment.yml`
+
+- then start the necessary file
+
+
+## Development
+
+- When developing and adding a new dependency like torch run the following command to ensure that the dependency is 
+in the `environment.yml`
+
+`conda env export > environment.yml`
+
 ## Questions
 
 - Length of the seminar paper presentation?
