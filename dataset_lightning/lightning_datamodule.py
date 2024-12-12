@@ -1,70 +1,31 @@
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
-from dataset import PreprocessingDataset
-
-"""
-Currently 2 DataModule definitions, second is the one to use with training, validation and test data
-"""
-
-class DataModule(pl.LightningDataModule):
-    def __init__(self, densetcn_options, allow_size_mismatch, model_path,
-                 use_boundary, relu_type, num_classes, backbone_type, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, batch_size=32, num_workers=4,
-                 ):
-        super().__init__()
-        self.lrs3_root = lrs3_root
-        self.dns_root = dns_root
-        self.snr_db = snr_db
-        self.transform = transform
-        self.sample_rate = sample_rate
-        self.mode_prob = mode_prob
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        # Audio options
-        self.densetcn_options = densetcn_options
-        self.allow_size_mismatch = allow_size_mismatch
-        self.backbone_type = backbone_type
-        self.use_boundary = use_boundary
-        self.relu_type = relu_type
-        self.num_classes = num_classes
-        self.model_path = model_path
-
-    def setup(self, stage=None):
-        # Split data into train, val, test
-        # For simplicity, we'll assume all data is for training.
-        # You can modify this method to split your data appropriately.
-        self.train_dataset = PreprocessingDataset(
-            self.lrs3_root, self.dns_root, self.densetcn_options, self.allow_size_mismatch, self.backbone_type,
-            self.use_boundary, self.relu_type,self.num_classes, self.model_path, self.snr_db, self.transform,
-            self.sample_rate, self.mode_prob
-        )
-
-    def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True
-        )
-
-import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
 from dataset import PreprocessingDataset  # Ensure correct import path
-import os
+
 
 class DataModule(pl.LightningDataModule):
     def __init__(
-        self,
-        pretrain_root,
-        trainval_root,
-        test_root,
-        dns_root,
-        snr_db=0,
-        transform=None,
-        sample_rate=16000,
-        mode_prob={'speaker': 0.5, 'noise': 0.5},
-        batch_size=32,
-        num_workers=4,
-        fixed_length=64000,
-        fixed_frames=100,
-        seed=42
+            self,
+            pretrain_root,
+            trainval_root,
+            test_root,
+            dns_root,
+            densetcn_options,
+            allow_size_mismatch,
+            model_path,
+            use_boundary,
+            relu_type,
+            num_classes,
+            backbone_type,
+            snr_db=0,
+            transform=None,
+            sample_rate=16000,
+            mode_prob={'speaker': 0.5, 'noise': 0.5},
+            batch_size=32,
+            num_workers=4,
+            fixed_length=64000,
+            fixed_frames=100,
+            seed=42,
     ):
         """
         PyTorch Lightning DataModule for PreprocessingDataset.
@@ -99,6 +60,14 @@ class DataModule(pl.LightningDataModule):
         self.fixed_length = fixed_length
         self.fixed_frames = fixed_frames
         self.seed = seed
+        # Audio options
+        self.densetcn_options = densetcn_options
+        self.allow_size_mismatch = allow_size_mismatch
+        self.backbone_type = backbone_type
+        self.use_boundary = use_boundary
+        self.relu_type = relu_type
+        self.num_classes = num_classes
+        self.model_path = model_path
 
         # Placeholders for datasets
         self.pretrain_dataset = None
@@ -121,42 +90,41 @@ class DataModule(pl.LightningDataModule):
         Args:
             stage (str, optional): Stage to set up ('fit', 'validate', 'test', 'predict'). Defaults to None.
         """
+        general_config = {
+            'dns_root': self.dns_root,
+            'densetcn_options': self.densetcn_options,
+            'allow_size_mismatch': self.allow_size_mismatch,
+            'backbone_type': self.backbone_type,
+            'use_boundary': self.use_boundary,
+            'relu_type': self.relu_type,
+            'num_classes': self.num_classes,
+            'model_path': self.model_path,
+            'snr_db': self.snr_db,
+            'transform': self.transform,
+            'sample_rate': self.sample_rate,
+            'mode_prob': self.mode_prob,
+            'fixed_length': self.fixed_length,
+        }
+
         if stage == 'fit' or stage is None:
             # Instantiate the pretrain dataset (optional, based on your training strategy)
+
             self.pretrain_dataset = PreprocessingDataset(
                 lrs3_root=self.pretrain_root,
-                dns_root=self.dns_root,
-                snr_db=self.snr_db,
-                transform=self.transform,
-                sample_rate=self.sample_rate,
-                mode_prob=self.mode_prob,
-                fixed_length=self.fixed_length,
-                fixed_frames=self.fixed_frames
+                **general_config
             )
 
             # Instantiate the trainval dataset
             self.trainval_dataset = PreprocessingDataset(
                 lrs3_root=self.trainval_root,
-                dns_root=self.dns_root,
-                snr_db=self.snr_db,
-                transform=self.transform,
-                sample_rate=self.sample_rate,
-                mode_prob=self.mode_prob,
-                fixed_length=self.fixed_length,
-                fixed_frames=self.fixed_frames
+                **general_config
             )
 
         if stage == 'test' or stage is None:
             # Instantiate the test dataset
             self.test_dataset = PreprocessingDataset(
                 lrs3_root=self.test_root,
-                dns_root=self.dns_root,
-                snr_db=self.snr_db,
-                transform=self.transform,
-                sample_rate=self.sample_rate,
-                mode_prob=self.mode_prob,
-                fixed_length=self.fixed_length,
-                fixed_frames=self.fixed_frames
+                **general_config
             )
 
     def train_dataloader(self):
@@ -185,6 +153,3 @@ class DataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True
         )
-
-
-

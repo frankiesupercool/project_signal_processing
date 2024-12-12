@@ -18,6 +18,8 @@ from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimpl
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, densetcn_options,allow_size_mismatch, backbone_type, use_boundary, relu_type, num_classes, model_path, snr_db=0, transform=None, sample_rate=16000,
                  mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000):
+
+        # todo fixed_frames ?
         """
         Args:
             lrs3_root (str): Path to the LRS3 dataset root directory.
