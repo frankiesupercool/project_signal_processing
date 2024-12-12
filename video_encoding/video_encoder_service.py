@@ -7,7 +7,7 @@ device = torch.device("cpu")
 
 
 
-class LipreadingPreprocessing:
+class VideoPreprocessingService:
 
     def __init__(self,
                  allow_size_mismatch: bool,

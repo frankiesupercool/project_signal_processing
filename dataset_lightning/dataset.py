@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import sys
 import linecache  # Import linecache for reading specific lines from files
 from torch.utils.data import DataLoader
-from video_encoding.video_encoder_service import LipreadingPreprocessing
+from video_encoding.video_encoder_service import VideoPreprocessingService
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
 
 
@@ -71,7 +71,7 @@ class PreprocessingDataset(Dataset):
         if len(self.speakers) < 2:
             raise ValueError("Need at least two speakers in LRS3 dataset for speaker separation.")
 
-        self.lipreading_preprocessing = LipreadingPreprocessing(
+        self.lipreading_preprocessing = VideoPreprocessingService(
             allow_size_mismatch,
             model_path,
             use_boundary,
