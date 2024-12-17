@@ -36,7 +36,7 @@ model_path = "../video_encoding/lrw_resnet18_dctcn_video_boundary.pth"
 
 def test_preprocessing_dataset():
     # Define paths to your x_datasets
-    lrs3_root = '../data/pretrain'  # Replace with your actual LRS3 root directory
+    lrs3_root = '../../../../../data/LRS3/pretrain'  # Replace with your actual LRS3 root directory
     dns_root = '../noise_data_set/noise'    # Replace with your actual DNS root directory
 
     # Check if directories exist

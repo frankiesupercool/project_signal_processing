@@ -6,9 +6,9 @@ import os
 
 def test_data_module():
     # Define dataset paths
-    pretrain_root = '../data/pretrain'   # Path for pretraining data
-    trainval_root = '../data/trainval'   # Path for training-validation data
-    test_root = '../data/test'           # Path for testing data
+    pretrain_root = '../../../../../data/LRS3/pretrain'   # Path for pretraining data
+    trainval_root = '../../../../../data/LRS3/trainval'   # Path for training-validation data
+    test_root = '../../../../../data/LRS3/test'           # Path for testing data
     dns_root = '../noise_data_set/noise' # Path for DNS noise data
 
     # Verify that directories exist
