@@ -3,37 +3,20 @@ from torch.utils.data import DataLoader
 from dataset_lightning.lightning_datamodule import DataModule
 import torch
 import os
+import config
 
 def test_data_module():
     # Define dataset paths
-    pretrain_root = '../../../../../data/LRS3/pretrain'   # Path for pretraining data
-    trainval_root = '../../../../../data/LRS3/trainval'   # Path for training-validation data
-    test_root = '../../../../../data/LRS3/test'           # Path for testing data
-    dns_root = '../noise_data_set/noise' # Path for DNS noise data
+    pretrain_root = config.PRETRAIN_DATA_PATH   # Path for pretraining data
+    trainval_root = config.TRAINVAL_DATA_PATH  # Path for training-validation data
+    test_root = config.TEST_DATA_PATH          # Path for testing data
+    dns_root = config.DNS_DATA_PATH # Path for DNS noise data
 
     # Verify that directories exist
     for path in [pretrain_root, trainval_root, test_root, dns_root]:
         if not os.path.isdir(path):
             raise FileNotFoundError(f"Required directory not found: {path}")
 
-    # Video encoding options
-    densetcn_options = {
-        'block_config': [3, 3, 3, 3],
-        'growth_rate_set': [384, 384, 384, 384],
-        'reduced_size': 512,
-        'kernel_size_set': [3, 5, 7],
-        'dilation_size_set': [1, 2, 5],
-        'squeeze_excitation': True,
-        'dropout': 0.2,
-    }
-
-    # Model and processing configurations
-    allow_size_mismatch = True
-    model_path = '../video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
-    use_boundary = True
-    relu_type = "swish"
-    num_classes = 500
-    backbone_type = "resnet"
 
     # Initialize the DataModule with correct parameters
     data_module = DataModule(
@@ -41,22 +24,22 @@ def test_data_module():
         trainval_root=trainval_root,
         test_root=test_root,
         dns_root=dns_root,
-        densetcn_options=densetcn_options,
-        allow_size_mismatch=allow_size_mismatch,
-        model_path=model_path,
-        use_boundary=use_boundary,
-        relu_type=relu_type,
-        num_classes=num_classes,
-        backbone_type=backbone_type,
-        snr_db=0,
+        densetcn_options=config.densetcn_options,
+        allow_size_mismatch=config.allow_size_mismatch,
+        model_path=config.MODEL_PATH,
+        use_boundary=config.use_boundary,
+        relu_type=config.relu_type,
+        num_classes=config.num_classes,
+        backbone_type=config.backbone_type,
+        snr_db=config.snr_db,
         transform=None,
-        sample_rate=16000,
-        mode_prob={'speaker': 0.5, 'noise': 0.5},
-        batch_size=4,
-        num_workers=4,  # Adjust based on your CPU cores
-        fixed_length=64000,
-        fixed_frames=100,
-        seed=42,
+        sample_rate=config.sample_rate,
+        mode_prob=config.mode_prob,
+        batch_size=config.batch_size,
+        num_workers=config.num_workers,
+        fixed_length=config.fixed_length,
+        fixed_frames=config.fixed_frames,
+        seed=config.SEED,
     )
 
     # Prepare the DataModule (this will set up datasets)
