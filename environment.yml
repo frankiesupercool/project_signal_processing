@@ -182,4 +182,3 @@ dependencies:
       - sounddevice==0.5.1
       - soundfile==0.12.1
       - sympy==1.13.1
-prefix: /export/home/3pralle/miniconda3/envs/project_sp
