@@ -10,6 +10,21 @@ To setup this environment follow the following steps:
 
 `conda env create -f environment.yml`
 
+### Create environment from scratch
+1. `conda create -n project_sp python=3.11`
+2. `conda activate project_sp`
+3. `conda install ffmpeg=4.2.2`
+4. `pip install soundfile`
+5. `conda install pytorch`
+6. `conda install pytorch::torchaudio`
+7. `conda install numpy matplotlib`
+8. `pip install denoiser`
+9. `conda install opencv`
+10. `conda install conda-forge::pytorch-lightning`
+11. `pip install omegaconf==2.3.0`
+
+Pip shows error regarding omegaconf version but it works.
+
 - then start the necessary file
 
 
