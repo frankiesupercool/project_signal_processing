@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import os
+
+import config
 from dataset_lightning.dataset import PreprocessingDataset
 from torch.utils.data import DataLoader
 
@@ -7,37 +9,11 @@ from torch.utils.data import DataLoader
 # If it's in a separate module, you can import it using:
 # from your_module import PreprocessingDataset
 
-densetcn_options = {'block_config': [3,
-                                         3,
-                                         3,
-                                         3],
-                        'growth_rate_set': [384,
-                                            384,
-                                            384,
-                                            384],
-                        'reduced_size': 512,
-                        'kernel_size_set': [3,
-                                            5,
-                                            7],
-                        'dilation_size_set': [1,
-                                              2,
-                                              5],
-                        'squeeze_excitation': True,
-                        'dropout': 0.2,
-                        }
-
-allow_size_mismatch = True  # todo was initially set to True
-model_path = '../video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
-use_boundary = True
-relu_type = "swish"
-num_classes = 500
-backbone_type = "resnet"
-model_path = "../video_encoding/lrw_resnet18_dctcn_video_boundary.pth"
 
 def test_preprocessing_dataset():
     # Define paths to your x_datasets
-    lrs3_root = '../data/pretrain'  # Replace with your actual LRS3 root directory
-    dns_root = '../noise_data_set/noise'    # Replace with your actual DNS root directory
+    lrs3_root = config.PRETRAIN_DATA_PATH # Replace with your actual LRS3 root directory
+    dns_root = config.DNS_DATA_PATH    # Replace with your actual DNS root directory
 
     # Check if directories exist
     if not os.path.isdir(lrs3_root):
@@ -49,21 +25,20 @@ def test_preprocessing_dataset():
     dataset = PreprocessingDataset(
         lrs3_root=lrs3_root,
         dns_root=dns_root,
-        densetcn_options=densetcn_options,
-        allow_size_mismatch=allow_size_mismatch,
-        model_path= model_path,
-        use_boundary=use_boundary,
-        relu_type=relu_type,
-        num_classes=num_classes,
-        backbone_type=backbone_type,
-        snr_db=10,  # Example SNR value
-        sample_rate=16000,
-        fixed_length=64000
-
+        densetcn_options=config.densetcn_options,
+        allow_size_mismatch=config.allow_size_mismatch,
+        model_path= config.MODEL_PATH,
+        use_boundary=config.use_boundary,
+        relu_type=config.relu_type,
+        num_classes=config.num_classes,
+        backbone_type=config.backbone_type,
+        snr_db=config.snr_db,  # Example SNR value
+        sample_rate=config.sample_rate,
+        fixed_length=config.fixed_length
     )
 
     # Create a DataLoader for batching (optional)
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True)
 
     print(f"Dataset Length: {len(dataset)}")
 
