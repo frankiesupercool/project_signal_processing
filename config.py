@@ -1,10 +1,10 @@
 # config.py
 
 # data paths
-PRETRAIN_DATA_PATH = "../../../../../data/LRS3/pretrain"       # Path to pretraining data
-TRAINVAL_DATA_PATH = "../../../../../data/LRS3/trainval"       # Path to training-validation data
-TEST_DATA_PATH = "../../../../../data/LRS3/test"               # Path to test data
-DNS_DATA_PATH = "../noise_data_set/noise" # Path to DNS noise data
+PRETRAIN_DATA_PATH = "../../../../data/LRS3/pretrain"       # Path to pretraining data
+TRAINVAL_DATA_PATH = "../../../../data/LRS3/trainval"       # Path to training-validation data
+TEST_DATA_PATH = "../../../../data/LRS3/test"               # Path to test data
+DNS_DATA_PATH = "./noise_data_set/noise" # Path to DNS noise data
 
 # general configs
 SEED = 42
@@ -24,7 +24,7 @@ densetcn_options = {
 
 # video model and processing configurations
 allow_size_mismatch = True
-MODEL_PATH = '../video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
+MODEL_PATH = './video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
 use_boundary = True
 relu_type = "swish"
 num_classes = 500

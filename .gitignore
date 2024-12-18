@@ -6,3 +6,6 @@ video_encoding/lrw_resnet18_dctcn_video_boundary.pth
 __pycache__/
 *.pyc
 dataset_lightning/paired_files.txt
+dns_files.txt
+paired_files.txt
+lightning_logs/
