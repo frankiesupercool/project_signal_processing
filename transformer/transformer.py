@@ -1,6 +1,7 @@
+import torch
 import torch.nn as nn
-from positional_encoding import PositionalEncoding
 from modality_encoder import ModalityEncoder
+from positional_encoder import PositionalEncoder
 
 class TransformerModel(nn.Module):
     """
@@ -10,8 +11,15 @@ class TransformerModel(nn.Module):
     def __init__(self, audio_dim, video_dim, embed_dim=768, nhead=8, num_layers=3,
                  dim_feedforward=532, max_seq_length=1024, denoiser_decoder=None):
         super(TransformerModel, self).__init__()
-        self.modality_encoder = ModalityEncoder(audio_dim, video_dim, embed_dim)
-        self.positional_encoding = PositionalEncoding(embed_dim, max_len=max_seq_length)
+
+        self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
+        self.video_proj = nn.Linear(video_dim, embed_dim)
+
+        self.positional_encoder = PositionalEncoder(d_model=768, max_len=max_seq_length, zero_pad=False, scale=True)
+
+        self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
+        self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
+
         encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
@@ -34,9 +42,25 @@ class TransformerModel(nn.Module):
         Returns:
             clean_audio: Tensor of shape (batch_size, clean_audio_length)
         """
-        # Encode modalities
-        combined = self.modality_encoder(encoded_audio, encoded_video)  # (batch_size, total_seq_len, embed_dim)
-        combined = self.positional_encoding(combined)  # Add positional encoding
+        # use projection for same dimension, otherwise adding data + positional + modality_enc would not work
+        audio_proj = self.audio_proj(encoded_audio)  # (batch_size, audio_seq_len, embed_dim)
+        video_proj = self.video_proj(encoded_video)  # (batch_size, video_seq_len, embed_dim)
+
+        # sinusoidal positional encoding
+        positional_audio_encoding = self.positional_encoder(audio_proj)
+        positional_video_encoding = self.positional_encoder(video_proj)
+
+        # modality encoding
+        modality_audio_encoded = self.audio_modality_encoder(audio_proj)  # (batch_size, total_seq_len, embed_dim)
+        modality_video_encoded = self.video_modality_encoder(video_proj)  # (batch_size, total_seq_len, embed_dim)
+
+        # A + PE + ME
+        audio_input = audio_proj + positional_audio_encoding + modality_audio_encoded
+        # V + PE + ME
+        video_input = video_proj + positional_video_encoding + modality_video_encoded
+
+        # concatenate along the temporal dimension
+        combined = torch.cat([audio_input, video_input], dim=1)
 
         # Transformer expects input as (seq_len, batch_size, embed_dim)
         transformer_input = combined.transpose(0, 1)  # (total_seq_len, batch_size, embed_dim)
