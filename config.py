@@ -4,7 +4,7 @@
 PRETRAIN_DATA_PATH = "../../../../data/LRS3/pretrain"       # Path to pretraining data
 TRAINVAL_DATA_PATH = "../../../../data/LRS3/trainval"       # Path to training-validation data
 TEST_DATA_PATH = "../../../../data/LRS3/test"               # Path to test data
-DNS_DATA_PATH = "./noise_data_set/noise" # Path to DNS noise data
+DNS_DATA_PATH = "./noise_data_set" # Path to DNS noise data
 
 # general configs
 SEED = 42
