@@ -279,7 +279,7 @@ class PreprocessingDataset(Dataset):
         sample = {
             'encoded_audio': encoded_audio,
             'encoded_video': encoded_video,  # Shape: [100, 96, 96]
-            'clean_speech': speech_waveform.unsqueeze(0),  # Shape: [1, samples]
+            'clean_speech': speech_waveform,  # Shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file
         }

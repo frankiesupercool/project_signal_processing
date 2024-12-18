@@ -1,10 +1,8 @@
 # AV_transformer.py
 
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
 from torch import nn, optim
 import torch
-from transformer import TransformerModel  # Ensure correct import path
 
 # Define the AudioVideoTransformer Lightning Module
 class AudioVideoTransformer(pl.LightningModule):
@@ -65,24 +63,24 @@ dummy_batch = {
     'clean_speech': torch.randn(4, 64000)         # [batch_size=4, 64000]
 }
 
-# Instantiate the TransformerModel with correct parameters
-# Ensure that 'denoiser_decoder' is either provided or left as None
-transformer_model_instance = TransformerModel(
-    audio_dim=1024,         # From your encoded_audio
-    video_dim=256,          # From your encoded_video
-    embed_dim=768,          # As per your specification
-    nhead=8,                # As per your specification
-    num_layers=3,           # As per your specification
-    dim_feedforward=532,    # As per your specification
-    max_seq_length=1024,    # Adjust based on your sequence lengths
-    denoiser_decoder=None   # Provide the denoiser's decoder if available
-)
-
-# Instantiate the Lightning Module with the model instance
-model = AudioVideoTransformer(model=transformer_model_instance)
-
-# Forward pass with dummy data to verify
-model.eval()
-with torch.no_grad():
-    predicted_clean = model(dummy_batch['encoded_audio'], dummy_batch['encoded_video'])
-    print(predicted_clean.shape)  # Expected: [4, 64000]
+# # Instantiate the TransformerModel with correct parameters
+# # Ensure that 'denoiser_decoder' is either provided or left as None
+# transformer_model_instance = TransformerModel(
+#     audio_dim=1024,         # From your encoded_audio
+#     video_dim=256,          # From your encoded_video
+#     embed_dim=768,          # As per your specification
+#     nhead=8,                # As per your specification
+#     num_layers=3,           # As per your specification
+#     dim_feedforward=532,    # As per your specification
+#     max_seq_length=1024,    # Adjust based on your sequence lengths
+#     denoiser_decoder=None   # Provide the denoiser's decoder if available
+# )
+#
+# # Instantiate the Lightning Module with the model instance
+# model = AudioVideoTransformer(model=transformer_model_instance)
+#
+# # Forward pass with dummy data to verify
+# model.eval()
+# with torch.no_grad():
+#     predicted_clean = model(dummy_batch['encoded_audio'], dummy_batch['encoded_video'])
+#     print(predicted_clean.shape)  # Expected: [4, 64000]
