@@ -5,7 +5,9 @@
 To setup this environment follow the following steps:
 
 - Load your data into the `data/pretrain`, `data/test`, `data/test` folders
-- Add the `lrw_resnet18_dctcn_video_boundary.pth` file to the video_encoding folder
+- Download the `lrw_resnet18_dctcn_video_boundary.pth` file 
+  ```https://drive.google.com/file/d/1TGFG0dW5M3rBErgU8i0N7M1ys9YMIvgm/view```
+- Add it to the video_encoding folder
 - start the environment by running
 
 `conda env create -f environment.yml`
