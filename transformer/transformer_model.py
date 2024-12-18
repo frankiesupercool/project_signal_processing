@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from modality_encoder import ModalityEncoder
-from positional_encoder import PositionalEncoder
+from transformer.modality_encoder import ModalityEncoder
+from transformer.positional_encoder import PositionalEncoder
 
 class TransformerModel(nn.Module):
     """
@@ -15,7 +15,7 @@ class TransformerModel(nn.Module):
         self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
         self.video_proj = nn.Linear(video_dim, embed_dim)
 
-        self.positional_encoder = PositionalEncoder(d_model=768, max_len=max_seq_length, zero_pad=False, scale=True)
+        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=True)
 
         self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
         self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
@@ -67,10 +67,9 @@ class TransformerModel(nn.Module):
         transformer_output = self.transformer_encoder(transformer_input)  # (total_seq_len, batch_size, embed_dim)
         transformer_output = transformer_output.transpose(0, 1)  # (batch_size, total_seq_len, embed_dim)
 
+        aggregated_output = torch.mean(transformer_output, dim=1)  # (batch_size, embed_dim)
         # Decode to clean audio
-        clean_audio = self.denoiser_decoder(transformer_output)  # (batch_size, total_seq_len, 64000)
+        clean_audio = self.denoiser_decoder(aggregated_output)  # (batch_size, total_seq_len, 64000)
 
-        # Flatten the last two dimensions if necessary
-        clean_audio = clean_audio.view(clean_audio.size(0), -1)  # (batch_size, 64000)
 
         return clean_audio
