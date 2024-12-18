@@ -15,11 +15,10 @@ class TransformerModel(nn.Module):
         self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
         self.video_proj = nn.Linear(video_dim, embed_dim)
 
-        # self.positional_encoder = PositionalEncoder(num_units=768, zero_pad=True, scale=True)
+        self.positional_encoder = PositionalEncoder(d_model=768, max_len=max_seq_length, zero_pad=False, scale=True)
 
-        self.positional_encoder = PositionalEncoder(d_model=768, max_len=max_seq_length, zero_pad=True, scale=True)
-
-        self.modality_encoder = ModalityEncoder(embed_dim=embed_dim)
+        self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
+        self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
 
         encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
@@ -52,8 +51,8 @@ class TransformerModel(nn.Module):
         positional_video_encoding = self.positional_encoder(video_proj)
 
         # modality encoding
-        modality_audio_encoded = self.modality_encoder(audio_proj)  # (batch_size, total_seq_len, embed_dim)
-        modality_video_encoded = self.modality_encoder(video_proj)  # (batch_size, total_seq_len, embed_dim)
+        modality_audio_encoded = self.audio_modality_encoder(audio_proj)  # (batch_size, total_seq_len, embed_dim)
+        modality_video_encoded = self.video_modality_encoder(video_proj)  # (batch_size, total_seq_len, embed_dim)
 
         # A + PE + ME
         audio_input = audio_proj + positional_audio_encoding + modality_audio_encoded

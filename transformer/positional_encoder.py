@@ -12,7 +12,6 @@ class PositionalEncoder(nn.Module):
         max_len (int): Maximum sequence length for precomputation.
         zero_pad (bool): If True, positions start from 1 with 0-padding for position 0.
             This can be useful when the first position corresponds to padding tokens or special tokens.
-            TODO probably not needed
         scale (bool): If True, the positional encodings are scaled by the square root of the
             embedding dimension (sqrt(num_units)). This scaling can help stabilize the magnitude of values
             in the input to the model, aligning better with initialization schemes of Transformer models
