@@ -8,7 +8,7 @@ DNS_DATA_PATH = "./datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
 SEED = 42
-batch_size = 64
+batch_size = 16
 num_workers = 10
 
 # video encoding options
