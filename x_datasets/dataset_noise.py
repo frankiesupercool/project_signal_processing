@@ -181,18 +181,4 @@ class LRS3WithNoiseDataset(Dataset):
 
         return sample
 
-dataset = LRS3WithNoiseDataset(lrs3_root='../data/pretrain', dns_root='../noise_data_set/noise', snr_db=30)
 
-# Access the first sample
-sample = dataset[1]
-
-# Print the keys of the sample dictionary
-print("Sample Keys:", sample.keys())
-
-# Inspect individual components
-print("Mixture Shape:", sample['mixture'].shape)
-print("Clean Speech Shape:", sample['clean_speech'].shape)
-print("Interference Shape:", sample['interference'].shape)
-print("Interference Type:", sample['interference_type'])
-print("SNR (dB):", sample.get('snr_db', 'N/A'))  # 'snr_db' may not exist in fixed SNR setup
-print("File Path:", sample['file_path'])

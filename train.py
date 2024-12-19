@@ -59,9 +59,9 @@ def train():
     encoded_audio_shape = sample_batch['encoded_audio'].shape  # [batch_size, channels, encoded_length]
     encoded_length = encoded_audio_shape[2]  # Extract encoded_length
     channels = encoded_audio_shape[1]         # Extract number of channels
-    print(f"Encoded Audio Shape: {encoded_audio_shape}")
-    print(f"Determined encoded_length: {encoded_length}")
-    print(f"Number of Channels: {channels}")
+    # print(f"Encoded Audio Shape: {encoded_audio_shape}")
+    # print(f"Determined encoded_length: {encoded_length}")
+    # print(f"Number of Channels: {channels}")
 
     # Initialize the model with the determined encoded_length and channels
     transformer_model_instance = TransformerModel(

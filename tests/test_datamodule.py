@@ -54,12 +54,12 @@ def test_data_module():
     test_batch = next(iter(train_loader))
 
     # Print batch details
-    print("Batch keys:", test_batch.keys())
-    print("Encoded Audio Shape:", test_batch['encoded_audio'].shape)
-    print("Encoded Video Shape:", test_batch['encoded_video'].shape)
-    print("Clean Speech Shape:", test_batch['clean_speech'].shape)
-    print("Audio File Paths:", test_batch['audio_file_path'])
-    print("Video File Paths:", test_batch['video_file_path'])
+    # print("Batch keys:", test_batch.keys())
+    # print("Encoded Audio Shape:", test_batch['encoded_audio'].shape)
+    # print("Encoded Video Shape:", test_batch['encoded_video'].shape)
+    # print("Clean Speech Shape:", test_batch['clean_speech'].shape)
+    # print("Audio File Paths:", test_batch['audio_file_path'])
+    # print("Video File Paths:", test_batch['video_file_path'])
 
     # Example: Fetch a batch from the training DataLoader
     val_batch = next(iter(val_loader))
