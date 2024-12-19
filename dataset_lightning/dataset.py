@@ -206,19 +206,57 @@ class PreprocessingDataset(Dataset):
 
             interference_type = 'speaker'
 
+
         elif mode == 'noise':
+
             # Speech Enhancement: Add background noise from DNS
-            idx_dns = random.randint(1, self.dns_files_len)
-            dns_file = linecache.getline(self.dns_files_list, idx_dns).strip()
-            interfering_waveform, orig_sample_rate = torchaudio.load(dns_file)
+
+            max_retries = 2
+
+            retries = 0
+
+            interfering_waveform = None
+
+            while retries <= max_retries:
+
+                idx_dns = random.randint(1, self.dns_files_len)
+
+                dns_file = linecache.getline(self.dns_files_list, idx_dns).strip()
+
+                interfering_waveform, orig_sample_rate = torchaudio.load(dns_file)
+
+                # Calculate interference power
+
+                interference_power = (interfering_waveform.norm(p=2)) ** 2
+
+                if interference_power > 0:
+                    # Successfully found a valid file
+
+                    break
+
+                # Retry logic if power is zero
+
+                print(f"Retry {retries + 1}/{max_retries}: Interference power is zero for file {dns_file}")
+
+                retries += 1
+
+            if retries > max_retries:
+                raise ValueError(f"All retries failed: Unable to find valid DNS file after {max_retries + 1} attempts.")
+
+            # Resample to match the target sample rate
+
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
+
                                                                   new_freq=self.sample_rate)
+
             interfering_waveform = interfering_waveform.squeeze(0)  # Assuming mono; adjust if stereo
 
             # Pad or truncate interfering waveform to fixed length
+
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
 
             interference_type = 'noise'
+
 
         else:
             raise ValueError("Invalid mode selected.")
@@ -267,6 +305,7 @@ class PreprocessingDataset(Dataset):
 
         audio_lrs3_file, video_lrs3_file = paired_line.split('\t')
         # print(f"Processing Audio: {audio_lrs3_file} | Video: {video_lrs3_file}")
+
 
         encoded_video = self._preprocess_video(video_lrs3_file)
         encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
