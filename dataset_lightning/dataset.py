@@ -266,7 +266,7 @@ class PreprocessingDataset(Dataset):
             raise IndexError(f"No paired files found at index {idx}")
 
         audio_lrs3_file, video_lrs3_file = paired_line.split('\t')
-        print(f"Processing Audio: {audio_lrs3_file} | Video: {video_lrs3_file}")
+        # print(f"Processing Audio: {audio_lrs3_file} | Video: {video_lrs3_file}")
 
         encoded_video = self._preprocess_video(video_lrs3_file)
         encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(

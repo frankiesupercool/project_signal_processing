@@ -47,7 +47,7 @@ class VideoPreprocessingService:
 
     def generate_encodings(self, data):
         encoded = self.extract_feats(self.model, data)
-        print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
+        # print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
         return encoded.to(device).detach().numpy()
 
     @staticmethod
@@ -87,7 +87,7 @@ class VideoPreprocessingService:
         lengths = [data.shape[0]]
         output = model(input_tensor, lengths=lengths)
 
-        print(f"Model output shape: {output.shape}")  # Debugging statement
+        # print(f"Model output shape: {output.shape}")  # Debugging statement
         return output
 
 
