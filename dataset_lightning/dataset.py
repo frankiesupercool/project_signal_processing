@@ -154,9 +154,6 @@ class PreprocessingDataset(Dataset):
         speech_power = (speech.norm(p=2)) ** 2
         interference_power = (interference.norm(p=2)) ** 2
 
-        if interference_power == 0:
-            raise ValueError("Interference power is zero, cannot compute scaling factor.")
-
         # Calculate the scaling factor for interference to achieve desired SNR
         snr_linear = 10 ** (snr_db / 10)
         scaling_factor = speech_power / (interference_power * snr_linear)
@@ -220,24 +217,19 @@ class PreprocessingDataset(Dataset):
             while retries <= max_retries:
 
                 idx_dns = random.randint(1, self.dns_files_len)
-
                 dns_file = linecache.getline(self.dns_files_list, idx_dns).strip()
-
                 interfering_waveform, orig_sample_rate = torchaudio.load(dns_file)
 
                 # Calculate interference power
-
                 interference_power = (interfering_waveform.norm(p=2)) ** 2
 
                 if interference_power > 0:
                     # Successfully found a valid file
-
                     break
 
                 # Retry logic if power is zero
 
                 print(f"Retry {retries + 1}/{max_retries}: Interference power is zero for file {dns_file}")
-
                 retries += 1
 
             if retries > max_retries:

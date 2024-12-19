@@ -31,14 +31,14 @@ class VideoPreprocessorSimple:
 
         actual_fps = cap.get(cv2.CAP_PROP_FPS)
         if actual_fps != self.fps:
-            print(f"Warning: Video {video_path} has FPS {actual_fps}, expected {self.fps}. Adjusting accordingly.")
+            #print(f"Warning: Video {video_path} has FPS {actual_fps}, expected {self.fps}. Adjusting accordingly.")
             self.fps = actual_fps  # Update fps to actual if different
 
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         required_frames = self.target_frames
 
         if total_frames < required_frames:
-            print(f"Warning: Video {video_path} has only {total_frames} frames. Padding to reach {required_frames} frames.")
+            #print(f"Warning: Video {video_path} has only {total_frames} frames. Padding to reach {required_frames} frames.")
             frames = self._read_all_frames(cap)
             frames = self._pad_frames(frames, required_frames)
         else:
