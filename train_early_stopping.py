@@ -84,7 +84,7 @@ def train():
     trainer = pl.Trainer(
         max_epochs=10,             # set to a higher number; early stopping may stop earlier
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=1 if torch.cuda.is_available() else None,
+        devices=1,
         callbacks=[early_stopping_callback, checkpoint_callback],
         log_every_n_steps=1
     )
