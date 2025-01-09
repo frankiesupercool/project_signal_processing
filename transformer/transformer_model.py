@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+
+from config import batch_size
 from transformer.modality_encoder import ModalityEncoder
 from transformer.positional_encoder import PositionalEncoder
 
@@ -20,7 +22,7 @@ class TransformerModel(nn.Module):
         self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
         self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Integration of the denoiser's decoder
