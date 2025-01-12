@@ -41,5 +41,5 @@ def test_wav_files(wav_folder):
 
 
 if __name__ == "__main__":
-    noise_folder = "../"+config.DNS_DATA_PATH
+    noise_folder = config.DNS_DATA_PATH
     test_wav_files(noise_folder)
