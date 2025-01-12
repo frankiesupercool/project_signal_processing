@@ -34,8 +34,18 @@ class AudioVideoTransformer(pl.LightningModule):
         predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean, clean_speech)
 
-        # Log the training loss
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        # Determine batch size
+        batch_size = encoded_audio.shape[0]
+
+        # Log the training loss with explicit batch_size
+        self.log(
+            'train_loss',
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=batch_size  # Explicitly specify batch_size
+        )
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -53,8 +63,21 @@ class AudioVideoTransformer(pl.LightningModule):
         loss = self.criterion(predicted_clean, clean_speech)
 
         # Log the validation loss
-        # IMPORTANT: 'val_loss' must match the monitor name in callbacks
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        # Determine batch size
+        batch_size = encoded_audio.shape[0]
+
+        # Log the validation loss with explicit batch_size
+        self.log(
+            'val_loss',
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=batch_size  # Explicitly specify batch_size
+        )
+
+        # Debugging: Print val_loss
+        print(f"Validation Step {batch_idx}: val_loss = {loss.item()}")
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -71,8 +94,18 @@ class AudioVideoTransformer(pl.LightningModule):
         predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean, clean_speech)
 
-        # Log the test loss
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        # Determine batch size
+        batch_size = encoded_audio.shape[0]
+
+        # Log the test loss with explicit batch_size
+        self.log(
+            'test_loss',
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=batch_size  # Explicitly specify batch_size
+        )
         return loss
 
     def configure_optimizers(self):
