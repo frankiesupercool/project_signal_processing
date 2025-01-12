@@ -72,6 +72,8 @@ class TransformerModel(nn.Module):
         aggregated_output = torch.mean(transformer_output, dim=1)  # (batch_size, embed_dim)
         # Decode to clean audio
         clean_audio = self.denoiser_decoder(aggregated_output)  # (batch_size, total_seq_len, 64000)
-
+        # Check for NaNs or Infs in output
+        if not torch.isfinite(clean_audio).all():
+            raise ValueError("Model output contains NaNs or Infs")
 
         return clean_audio

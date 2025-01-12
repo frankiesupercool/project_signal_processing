@@ -31,6 +31,14 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
 
+        # Check for NaNs or Infs in inputs and targets
+        if not torch.isfinite(encoded_audio).all():
+            raise ValueError(f"NaNs or Infs found in encoded_audio at batch {batch_idx}")
+        if not torch.isfinite(encoded_video).all():
+            raise ValueError(f"NaNs or Infs found in encoded_video at batch {batch_idx}")
+        if not torch.isfinite(clean_speech).all():
+            raise ValueError(f"NaNs or Infs found in clean_speech at batch {batch_idx}")
+
         predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean, clean_speech)
 
