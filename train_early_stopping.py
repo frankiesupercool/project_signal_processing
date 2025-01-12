@@ -63,7 +63,7 @@ def train():
     )
 
     # 3) Create your LightningModule with the model
-    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=1e-4)
+    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=1e-5)
 
     # 4) Define callbacks for early stopping and saving the best checkpoint
     early_stopping_callback = EarlyStopping(
