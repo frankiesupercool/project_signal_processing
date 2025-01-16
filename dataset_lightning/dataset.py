@@ -129,7 +129,7 @@ class PreprocessingDataset(Dataset):
             waveform = torch.nn.functional.pad(waveform, (0, padding))
         return waveform
 
-    def add_noise_with_snr(self, speech, interference, snr_db):
+    def add_noise_with_snr(speech, interference, snr_db, epsilon=1e-10):
         """
         Mixes speech with interference (noise or another speaker) at the specified SNR.
 
@@ -137,20 +137,25 @@ class PreprocessingDataset(Dataset):
             speech (torch.Tensor): Clean speech waveform.
             interference (torch.Tensor): Interfering waveform (noise or another speaker's speech).
             snr_db (float): Desired Signal-to-Noise Ratio in decibels.
+            epsilon (float): Small constant to prevent division by zero.
 
         Returns:
             torch.Tensor: Mixed waveform.
         """
         # Calculate power of speech and interference
-        speech_power = (speech.norm(p=2)) ** 2
-        interference_power = (interference.norm(p=2)) ** 2
+        speech_power = speech.norm(p=2).pow(2)
+        interference_power = interference.norm(p=2).pow(2) + epsilon  # Prevent division by zero
 
         # Calculate the scaling factor for interference to achieve desired SNR
         snr_linear = 10 ** (snr_db / 10)
         scaling_factor = speech_power / (interference_power * snr_linear)
 
+        # Prevent scaling_factor from becoming too large
+        max_scaling = 1e3
+        scaling_factor = torch.clamp(scaling_factor, max=max_scaling)
+
         # Scale interference and mix
-        interference_scaled = interference * scaling_factor.sqrt()
+        interference_scaled = interference * torch.sqrt(scaling_factor)
         mixed = speech + interference_scaled
 
         return mixed
