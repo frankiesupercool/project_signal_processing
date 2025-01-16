@@ -47,7 +47,7 @@ class VideoPreprocessingService:
                      densetcn_options: dict,
                      backbone_type: str = 'resnet',
                      relu_type: str = 'relu',
-                     use_boundary: bool = True,
+                     use_boundary: bool = False,
                      extract_feats:bool = True):
         """
             Creates the model using the in the paper given specifications of using a resnet and swish relu.
