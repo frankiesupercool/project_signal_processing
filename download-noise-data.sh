@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+# RUN WITHIN SCREEN!!
+
 # ***** 5th DNS Challenge at ICASSP 2023*****
 # Noise data which is used in both tracks
 # Also download the impulse response data
@@ -18,9 +20,9 @@ BLOB_NAMES=(
 
 AZURE_URL="https://dnschallengepublic.blob.core.windows.net/dns5archive/V5_training_dataset"
 
-OUTPUT_PATH="./"
+OUTPUT_PATH="./../../../../data/datasets/"
 
-mkdir -p $OUTPUT_PATH/noise_data_set
+mkdir -p $OUTPUT_PATH/denoiser_subset
 
 for BLOB in ${BLOB_NAMES[@]}
 do
@@ -38,5 +40,5 @@ do
     # wget "$URL" -O "$OUTPUT_PATH/$BLOB"
 
     # Same, + unpack files on the fly
-    curl "$URL" | tar -C "$OUTPUT_PATH" -f - -x -j
+    curl "$URL" | tar -C "$OUTPUT_PATH/denoiser_subset" -f - -x -j
 done

@@ -84,7 +84,12 @@ class PreprocessingDataset(Dataset):
                 audio_files = sorted([f for f in os.listdir(speaker_dir) if f.lower().endswith(audio_ext)])
                 video_files = sorted([f for f in os.listdir(speaker_dir) if f.lower().endswith(video_ext)])
 
-                # Ensure that for each audio file, there is a corresponding video file
+                # Ensure that both audio and video files exist
+                if not audio_files or not video_files:
+                    print(f"Warning: Speaker {speaker} does not have both audio and video files.")
+                    continue
+
+                # Pair files up to the minimum length
                 paired = zip(audio_files, video_files)
                 for audio, video in paired:
                     audio_path = os.path.join(speaker_dir, audio)
@@ -104,9 +109,15 @@ class PreprocessingDataset(Dataset):
     def _get_speakers(self):
         """
         Returns a list of speaker IDs based on the directory structure.
-        Assumes that each speaker has their own subdirectory under lrs3_root.
+        Only includes speakers that have at least one .wav file.
         """
-        speakers = [d for d in os.listdir(self.lrs3_root) if os.path.isdir(os.path.join(self.lrs3_root, d))]
+        speakers = []
+        for d in os.listdir(self.lrs3_root):
+            speaker_dir = os.path.join(self.lrs3_root, d)
+            if os.path.isdir(speaker_dir):
+                wav_files = [f for f in os.listdir(speaker_dir) if f.lower().endswith('.wav')]
+                if wav_files:
+                    speakers.append(d)
         return speakers
 
     def _extract_speaker_id(self, file_path):

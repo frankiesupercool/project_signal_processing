@@ -1,86 +1,196 @@
-# AV_transformer.py
-
 import pytorch_lightning as pl
 from torch import nn, optim
 import torch
+import logging
 
-# Define the AudioVideoTransformer Lightning Module
+# Configure logging
+logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger(__name__)
+
 class AudioVideoTransformer(pl.LightningModule):
-    def __init__(self, model, learning_rate=1e-4):
+    def __init__(self, model, learning_rate=1e-5):
         super(AudioVideoTransformer, self).__init__()
         self.model = model
         self.learning_rate = learning_rate
         self.criterion = nn.MSELoss()  # Using Mean Squared Error loss
 
+        # Initialize a counter for skipped batches
+        self.skipped_batches = 0
+
     def forward(self, encoded_audio, encoded_video):
+        """
+        Forward pass through the underlying model.
+        Expects:
+          - encoded_audio: shape [batch_size, seq_len, audio_dim]
+          - encoded_video: shape [batch_size, seq_len, video_dim]
+        Returns:
+          - predicted_clean: shape [batch_size, 64000] (example)
+        """
         return self.model(encoded_audio, encoded_video)
 
     def training_step(self, batch, batch_idx):
-        encoded_audio = batch['encoded_audio']  # [batch_size, seq_len, audio_dim=1024]
-        encoded_video = batch['encoded_video']  # [batch_size, seq_len, video_dim=256]
-        clean_speech = batch['clean_speech']    # [batch_size, 64000]
+        """
+        Training step:
+         1) Check for NaNs or Infs in inputs and targets.
+         2) If found, log and skip the batch.
+         3) Otherwise, perform forward pass, compute loss, and log 'train_loss'.
+        """
+        encoded_audio = batch['encoded_audio']
+        encoded_video = batch['encoded_video']
+        clean_speech = batch['clean_speech']
 
-        # Forward pass
-        predicted_clean = self(encoded_audio, encoded_video)  # [batch_size, 64000]
+        # Check for NaNs or Infs in inputs and targets
+        if not torch.isfinite(encoded_audio).all():
+            logger.warning(f"NaNs or Infs found in encoded_audio at batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return torch.tensor(0.0, device=self.device, requires_grad=True)  # Dummy loss
+        if not torch.isfinite(encoded_video).all():
+            logger.warning(f"NaNs or Infs found in encoded_video at batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return torch.tensor(0.0, device=self.device, requires_grad=True)  # Dummy loss
+        if not torch.isfinite(clean_speech).all():
+            logger.warning(f"NaNs or Infs found in clean_speech at batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return torch.tensor(0.0, device=self.device, requires_grad=True)  # Dummy loss
 
-        # Compute loss
+        # Proceed with forward pass and loss computation
+        predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean, clean_speech)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+
+        # Determine batch size
+        batch_size = encoded_audio.shape[0]
+
+        # Log the training loss with explicit batch_size
+        self.log(
+            'train_loss',
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=batch_size  # Explicitly specify batch_size
+        )
         return loss
 
     def validation_step(self, batch, batch_idx):
+        """
+        Validation step:
+         1) Check for NaNs or Infs in inputs and targets.
+         2) If found, log and skip the batch.
+         3) Otherwise, perform forward pass, compute loss, and log 'val_loss'.
+        """
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
 
-        # Forward pass
-        predicted_clean = self(encoded_audio, encoded_video)
+        # Check for NaNs or Infs in inputs and targets
+        if not torch.isfinite(encoded_audio).all():
+            logger.warning(f"NaNs or Infs found in encoded_audio at validation batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return
+        if not torch.isfinite(encoded_video).all():
+            logger.warning(f"NaNs or Infs found in encoded_video at validation batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return
+        if not torch.isfinite(clean_speech).all():
+            logger.warning(f"NaNs or Infs found in clean_speech at validation batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return
 
-        # Compute loss
+        # Proceed with forward pass and loss computation
+        predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean, clean_speech)
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+
+        # Determine batch size
+        batch_size = encoded_audio.shape[0]
+
+        # Log the validation loss with explicit batch_size
+        self.log(
+            'val_loss',
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=batch_size  # Explicitly specify batch_size
+        )
+
+        # Debugging: Print val_loss
+        logger.info(f"Validation Step {batch_idx}: val_loss = {loss.item()}")
+        return loss
 
     def test_step(self, batch, batch_idx):
+        """
+        Test step:
+         1) Check for NaNs or Infs in inputs and targets.
+         2) If found, log and skip the batch.
+         3) Otherwise, perform forward pass, compute loss, and log 'test_loss'.
+        """
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
 
-        # Forward pass
-        predicted_clean = self(encoded_audio, encoded_video)
+        # Check for NaNs or Infs in inputs and targets
+        if not torch.isfinite(encoded_audio).all():
+            logger.warning(f"NaNs or Infs found in encoded_audio at test batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return
+        if not torch.isfinite(encoded_video).all():
+            logger.warning(f"NaNs or Infs found in encoded_video at test batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return
+        if not torch.isfinite(clean_speech).all():
+            logger.warning(f"NaNs or Infs found in clean_speech at test batch {batch_idx}. Skipping batch.")
+            self.skipped_batches += 1
+            return
 
-        # Compute loss
+        # Proceed with forward pass and loss computation
+        predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean, clean_speech)
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+
+        # Determine batch size
+        batch_size = encoded_audio.shape[0]
+
+        # Log the test loss with explicit batch_size
+        self.log(
+            'test_loss',
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=batch_size  # Explicitly specify batch_size
+        )
+        return loss
 
     def configure_optimizers(self):
+        """
+        Configure the optimizer. Feel free to change optimizer & learning rate if needed.
+        """
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
 
-# Create a dummy batch to test the model
-dummy_batch = {
-    'encoded_audio': torch.randn(4, 61, 1024),    # [batch_size=4, seq_len=61, audio_dim=1024]
-    'encoded_video': torch.randn(4, 100, 256),    # [batch_size=4, seq_len=100, video_dim=256]
-    'clean_speech': torch.randn(4, 64000)         # [batch_size=4, 64000]
-}
+    def on_train_epoch_end(self):
+        """
+        Called at the end of the training epoch. Logs the number of skipped batches.
+        """
+        if self.skipped_batches > 0:
+            logger.warning(f"Total skipped training batches this epoch: {self.skipped_batches}")
+            # Reset the counter for the next epoch
+            self.skipped_batches = 0
 
-# # Instantiate the TransformerModel with correct parameters
-# # Ensure that 'denoiser_decoder' is either provided or left as None
-# transformer_model_instance = TransformerModel(
-#     audio_dim=1024,         # From your encoded_audio
-#     video_dim=256,          # From your encoded_video
-#     embed_dim=768,          # As per your specification
-#     nhead=8,                # As per your specification
-#     num_layers=3,           # As per your specification
-#     dim_feedforward=532,    # As per your specification
-#     max_seq_length=1024,    # Adjust based on your sequence lengths
-#     denoiser_decoder=None   # Provide the denoiser's decoder if available
-# )
-#
-# # Instantiate the Lightning Module with the model instance
-# model = AudioVideoTransformer(model=transformer_model_instance)
-#
-# # Forward pass with dummy data to verify
-# model.eval()
-# with torch.no_grad():
-#     predicted_clean = model(dummy_batch['encoded_audio'], dummy_batch['encoded_video'])
-#     print(predicted_clean.shape)  # Expected: [4, 64000]
+    def on_validation_epoch_end(self):
+        """
+        Called at the end of the validation epoch. Logs the number of skipped batches.
+        """
+        if self.skipped_batches > 0:
+            logger.warning(f"Total skipped validation batches this epoch: {self.skipped_batches}")
+            # Reset the counter for the next epoch
+            self.skipped_batches = 0
+
+    def on_test_epoch_end(self):
+        """
+        Called at the end of the test epoch. Logs the number of skipped batches.
+        """
+        if self.skipped_batches > 0:
+            logger.warning(f"Total skipped test batches this epoch: {self.skipped_batches}")
+            # Reset the counter for the next epoch
+            self.skipped_batches = 0
+
