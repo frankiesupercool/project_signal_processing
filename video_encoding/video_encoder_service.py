@@ -3,10 +3,9 @@ import torch
 from numpy.lib.function_base import extract
 
 from video_encoding.models.video_encoder_model import VideoEncoder
+from utils.device_utils import get_device
 
-device = torch.device("cpu")
-
-
+device = get_device()
 
 class VideoPreprocessingService:
 
@@ -80,7 +79,7 @@ class VideoPreprocessingService:
 
         # -- load dictionary
         assert os.path.isfile(load_path), "Error when loading the model, provided path not found: {}".format(load_path)
-        checkpoint = torch.load(load_path, map_location=torch.device('cpu'), weights_only=True)
+        checkpoint = torch.load(load_path, map_location=device, weights_only=True)
         loaded_state_dict = checkpoint['model_state_dict']
 
         if allow_size_mismatch:
@@ -114,7 +113,6 @@ class VideoPreprocessingService:
                 Tensor:
 
         """
-        print("in extract feats")
         assert model.extract_feats == True
         # Avoid using torch.tensor on existing tensors. Use clone().detach() if data is a tensor,
         # or torch.from_numpy() if data is a NumPy array.
