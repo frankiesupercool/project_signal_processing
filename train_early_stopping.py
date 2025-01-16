@@ -53,7 +53,7 @@ def train():
     # 2) Create the underlying transformer model instance
     transformer_model_instance = TransformerModel(
         audio_dim=1024,         # matches your 'encoded_audio'
-        video_dim=500,          # matches your 'encoded_video'
+        video_dim=512,          # matches your 'encoded_video'
         embed_dim=768,          # example
         nhead=8,                # example
         num_layers=3,           # example
