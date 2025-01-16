@@ -129,7 +129,7 @@ class PreprocessingDataset(Dataset):
             waveform = torch.nn.functional.pad(waveform, (0, padding))
         return waveform
 
-    def add_noise_with_snr(speech, interference, snr_db, epsilon=1e-10):
+    def _add_noise_with_snr(self, speech, interference, snr_db, epsilon=1e-10):
         """
         Mixes speech with interference (noise or another speaker) at the specified SNR.
 
