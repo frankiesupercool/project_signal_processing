@@ -31,13 +31,6 @@ def train():
         trainval_root=trainval_root,
         test_root=test_root,
         dns_root=dns_root,
-        densetcn_options=config.densetcn_options,
-        allow_size_mismatch=config.allow_size_mismatch,
-        model_path=config.MODEL_PATH,
-        use_boundary=config.use_boundary,
-        relu_type=config.relu_type,
-        num_classes=config.num_classes,
-        backbone_type=config.backbone_type,
         snr_db=config.snr_db,
         transform=None,
         sample_rate=config.sample_rate,
@@ -54,6 +47,13 @@ def train():
     transformer_model_instance = TransformerModel(
         audio_dim=1024,         # matches your 'encoded_audio'
         video_dim=512,          # matches your 'encoded_video'
+        densetcn_options=config.densetcn_options,
+        allow_size_mismatch=config.allow_size_mismatch,
+        model_path=config.MODEL_PATH,
+        use_boundary=config.use_boundary,
+        relu_type=config.relu_type,
+        num_classes=config.num_classes,
+        backbone_type=config.backbone_type,
         embed_dim=768,          # example
         nhead=8,                # example
         num_layers=3,           # example

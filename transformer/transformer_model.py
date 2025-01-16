@@ -4,15 +4,41 @@ import torch.nn as nn
 from config import batch_size
 from transformer.modality_encoder import ModalityEncoder
 from transformer.positional_encoder import PositionalEncoder
+from denoiser import pretrained
+import linecache  # Import linecache for reading specific lines from files
+from video_encoding.video_encoder_service import VideoPreprocessingService
 
 class TransformerModel(nn.Module):
     """
     Transformer model that encodes modalities and decodes to clean audio.
     """
 
-    def __init__(self, audio_dim, video_dim, embed_dim=768, nhead=8, num_layers=3,
+    def __init__(self, audio_dim, video_dim, densetcn_options,allow_size_mismatch, backbone_type, use_boundary, relu_type, num_classes, model_path, embed_dim=768, nhead=8, num_layers=3,
                  dim_feedforward=532, max_seq_length=1024, denoiser_decoder=None):
         super(TransformerModel, self).__init__()
+
+        # Initialise Video
+        self.densetcn_options = densetcn_options
+        self.allow_size_mismatch = allow_size_mismatch
+        self.backbone_type = backbone_type
+        self.use_boundary = use_boundary
+        self.relu_type = relu_type
+        self.num_classes = num_classes
+        self.model_path = model_path
+
+        self.lipreading_preprocessing = VideoPreprocessingService(
+            allow_size_mismatch,
+            model_path,
+            use_boundary,
+            relu_type,
+            num_classes,
+            backbone_type,
+            densetcn_options)
+
+        # Load the pretrained denoiser model
+        self.model = pretrained.dns64()
+        # Initialize the denoiser encoder
+        self.encoder = self.model.encoder
 
         self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
         self.video_proj = nn.Linear(video_dim, embed_dim)
@@ -35,8 +61,26 @@ class TransformerModel(nn.Module):
                 nn.ReLU(),
                 nn.Linear(1024, 64000)  # Map to waveform length
             )
+    def _encode_audio(self, audio):
+        def _encode_audio(self, audio):
+            print(f"[DEBUG] Input to _encode_audio: {audio.shape}")
+            with torch.no_grad():
+                encoded_audio = audio
+                for i, layer in enumerate(self.encoder):
+                    encoded_audio = layer(encoded_audio)
+                    print(f"[DEBUG] After layer {i}: shape = {encoded_audio.shape}")
 
-    def forward(self, encoded_audio, encoded_video):
+            # Remove batch dimension after encoding
+            encoded_audio = encoded_audio.squeeze(0)
+            encoded_audio = encoded_audio.permute(1, 0)
+            return encoded_audio
+
+    def _encode_video(self, video):
+        encoded_video = self.lipreading_preprocessing.generate_encodings(video)
+        encoded_video = encoded_video.squeeze(0)
+        return encoded_video
+
+    def forward(self, preprocessed_audio, preprocessed_video):
         """
         Args:
             encoded_audio: Tensor of shape (batch_size, audio_seq_len, audio_dim)
@@ -44,6 +88,12 @@ class TransformerModel(nn.Module):
         Returns:
             clean_audio: Tensor of shape (batch_size, clean_audio_length)
         """
+        encoded_audio = self._encode_audio(preprocessed_audio)
+        encoded_video = self._encode_video(preprocessed_video)
+
+        print(f"[DEBUG] Encoded Audio Shape: {encoded_audio.shape}")  # Expected: [seq_len, channels]
+        print(f"[DEBUG] Encoded Video Shape: {encoded_video.shape}")
+
         if encoded_video.dim() == 4 and encoded_video.size(1) == 1:
             encoded_video = encoded_video.squeeze(1)  # (batch_size, video_seq_len, video_dim)
         elif encoded_video.dim() == 4 and encoded_video.size(1) > 1:

@@ -68,8 +68,8 @@ class VideoPreprocessingService:
 
     def generate_encodings(self, data):
         encoded = self.extract_feats(self.model, data)
-        # print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
-        return encoded.to(device).detach().numpy()
+        print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
+        return encoded.to(device)
 
     @staticmethod
     def load_model(load_path, model, optimizer=None, allow_size_mismatch=False):
@@ -115,11 +115,26 @@ class VideoPreprocessingService:
                 Tensor:
 
         """
+        print("in extract feats")
         assert model.extract_feats == True
-        input_tensor = torch.FloatTensor(data)[None, None, :, :, :].to(device)  # Shape: [1, 1, 100, 96, 96]
-        lengths = [data.shape[0]]
-        output = model(input_tensor, lengths=lengths)
+        # Avoid using torch.tensor on existing tensors. Use clone().detach() if data is a tensor,
+        # or torch.from_numpy() if data is a NumPy array.
+        if isinstance(data, torch.Tensor):
+            input_tensor = data.clone().detach().float()
+        else:
+            input_tensor = torch.from_numpy(data).float()
 
+        # Add channel dimension at position 1: [batch_size, 1, frames, 96, 96]
+        input_tensor = input_tensor.unsqueeze(1)
+        print(f"[DEBUG] Input Tensor Shape for VideoEncoder: {input_tensor.shape}")
+
+        input_tensor = input_tensor.to(device)
+
+        # Assuming all samples have the same number of frames
+        lengths = [data.shape[1]] * data.shape[0]  # [frames, frames, ..., frames]
+        with torch.no_grad():
+            output = model(input_tensor, lengths=lengths)
+        print(f"[DEBUG] Model Output Shape: {output.shape}")
         # print(f"Model output shape: {output.shape}")  # Debugging statement
         return output
 
