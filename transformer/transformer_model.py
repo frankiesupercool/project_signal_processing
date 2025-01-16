@@ -47,23 +47,27 @@ class TransformerModel(nn.Module):
         # use projection for same dimension, otherwise adding data + positional + modality_enc would not work
         audio_proj = self.audio_proj(encoded_audio)  # (batch_size, audio_seq_len, embed_dim)
         video_proj = self.video_proj(encoded_video)  # (batch_size, video_seq_len, embed_dim)
-
+        print(f"audio_proj shape: {audio_proj.shape}")
+        print(f"video_proj shape: {video_proj.shape}")
         # sinusoidal positional encoding
         positional_audio_encoding = self.positional_encoder(audio_proj)
         positional_video_encoding = self.positional_encoder(video_proj)
-
+        print(f"positional_audio_encoding shape: {positional_audio_encoding.shape}")
+        print(f"positional_video_encoding shape: {positional_video_encoding.shape}")
         # modality encoding
         modality_audio_encoded = self.audio_modality_encoder(audio_proj)  # (batch_size, total_seq_len, embed_dim)
         modality_video_encoded = self.video_modality_encoder(video_proj)  # (batch_size, total_seq_len, embed_dim)
-
+        print(f"modality_audio_encoded shape: {modality_audio_encoded.shape}")
+        print(f"modality_video_encoded shape: {modality_video_encoded.shape}")
         # A + PE + ME
         audio_input = audio_proj + positional_audio_encoding + modality_audio_encoded
         # V + PE + ME
         video_input = video_proj + positional_video_encoding + modality_video_encoded
-
+        print(f"audio_input shape: {audio_input.shape}")
+        print(f"video_input shape: {video_input.shape}")
         # concatenate along the temporal dimension
         combined = torch.cat([audio_input, video_input], dim=1)
-
+        print(f"combined shape: {combined.shape}")
         # Transformer expects input as (seq_len, batch_size, embed_dim)
         transformer_input = combined.transpose(0, 1)  # (total_seq_len, batch_size, embed_dim)
         transformer_output = self.transformer_encoder(transformer_input)  # (total_seq_len, batch_size, embed_dim)
