@@ -44,26 +44,26 @@ class TransformerModel(nn.Module):
         Returns:
             clean_audio: Tensor of shape (batch_size, clean_audio_length)
         """
+        if encoded_video.dim() == 4 and encoded_video.size(1) == 1:
+            encoded_video = encoded_video.squeeze(1)  # (batch_size, video_seq_len, video_dim)
+        elif encoded_video.dim() == 4 and encoded_video.size(1) > 1:
+            # Handle multiple channels if applicable
+            encoded_video = encoded_video.mean(dim=1)  # Example: Average over channels
         # use projection for same dimension, otherwise adding data + positional + modality_enc would not work
         audio_proj = self.audio_proj(encoded_audio)  # (batch_size, audio_seq_len, embed_dim)
         video_proj = self.video_proj(encoded_video)  # (batch_size, video_seq_len, embed_dim)
-
         # sinusoidal positional encoding
         positional_audio_encoding = self.positional_encoder(audio_proj)
         positional_video_encoding = self.positional_encoder(video_proj)
-
         # modality encoding
         modality_audio_encoded = self.audio_modality_encoder(audio_proj)  # (batch_size, total_seq_len, embed_dim)
         modality_video_encoded = self.video_modality_encoder(video_proj)  # (batch_size, total_seq_len, embed_dim)
-
         # A + PE + ME
         audio_input = audio_proj + positional_audio_encoding + modality_audio_encoded
         # V + PE + ME
         video_input = video_proj + positional_video_encoding + modality_video_encoded
-
         # concatenate along the temporal dimension
         combined = torch.cat([audio_input, video_input], dim=1)
-
         # Transformer expects input as (seq_len, batch_size, embed_dim)
         transformer_input = combined.transpose(0, 1)  # (total_seq_len, batch_size, embed_dim)
         transformer_output = self.transformer_encoder(transformer_input)  # (total_seq_len, batch_size, embed_dim)

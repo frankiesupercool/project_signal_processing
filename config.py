@@ -8,7 +8,7 @@ DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/n
 
 # general configs
 SEED = 42
-batch_size = 16
+batch_size = 64
 num_workers = 10
 
 # video encoding options
@@ -25,7 +25,7 @@ densetcn_options = {
 # video model and processing configurations
 allow_size_mismatch = True
 MODEL_PATH = './video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
-use_boundary = True
+use_boundary = False
 relu_type = "swish"
 num_classes = 500
 backbone_type = "resnet"

@@ -21,8 +21,8 @@ class DataModule(pl.LightningDataModule):
             transform=None,
             sample_rate=16000,
             mode_prob={'speaker': 0.5, 'noise': 0.5},
-            batch_size=32,
-            num_workers=4,
+            batch_size=64,
+            num_workers=8,
             fixed_length=64000,
             fixed_frames=100,
             seed=42,
@@ -133,7 +133,8 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            persistent_workers=True
         )
 
     def val_dataloader(self):
@@ -142,7 +143,8 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            persistent_workers=True
         )
 
     def test_dataloader(self):
@@ -151,5 +153,6 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            persistent_workers=True
         )
