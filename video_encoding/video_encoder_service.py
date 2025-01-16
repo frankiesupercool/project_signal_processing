@@ -68,7 +68,6 @@ class VideoPreprocessingService:
 
     def generate_encodings(self, data):
         encoded = self.extract_feats(self.model, data)
-        print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
         return encoded.to(device)
 
     @staticmethod
@@ -126,7 +125,6 @@ class VideoPreprocessingService:
 
         # Add channel dimension at position 1: [batch_size, 1, frames, 96, 96]
         input_tensor = input_tensor.unsqueeze(1)
-        print(f"[DEBUG] Input Tensor Shape for VideoEncoder: {input_tensor.shape}")
 
         input_tensor = input_tensor.to(device)
 
@@ -134,8 +132,7 @@ class VideoPreprocessingService:
         lengths = [data.shape[1]] * data.shape[0]  # [frames, frames, ..., frames]
         with torch.no_grad():
             output = model(input_tensor, lengths=lengths)
-        print(f"[DEBUG] Model Output Shape: {output.shape}")
-        # print(f"Model output shape: {output.shape}")  # Debugging statement
+
         return output
 
 

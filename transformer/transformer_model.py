@@ -65,16 +65,13 @@ class TransformerModel(nn.Module):
             ).to(self.device)
 
     def _encode_audio(self, audio):
-        print(f"[DEBUG] Input to _encode_audio: {audio.shape}")
         with torch.no_grad():
             encoded_audio = audio
             for i, layer in enumerate(self.encoder):
                 encoded_audio = layer(encoded_audio)
-                print(f"[DEBUG] After layer {i}: shape = {encoded_audio.shape}")
 
         # permute to [batch_size, seq_len, embed_dim]
         encoded_audio = encoded_audio.permute(0, 2, 1)  # [64, 61, 1024]
-        print(f"[DEBUG] Permuted Encoded Audio Shape: {encoded_audio.shape}")
         return encoded_audio
 
 
@@ -93,12 +90,9 @@ class TransformerModel(nn.Module):
         """
         preprocessed_audio = preprocessed_audio.to(self.device)
         preprocessed_video = preprocessed_video.to(self.device)
-        
+
         encoded_audio = self._encode_audio(preprocessed_audio)
         encoded_video = self._encode_video(preprocessed_video)
-
-        print(f"[DEBUG] Encoded Audio Shape: {encoded_audio.shape}")  # Expected: [seq_len, channels]
-        print(f"[DEBUG] Encoded Video Shape: {encoded_video.shape}")
 
         if encoded_video.dim() == 4 and encoded_video.size(1) == 1:
             encoded_video = encoded_video.squeeze(1)  # (batch_size, video_seq_len, video_dim)

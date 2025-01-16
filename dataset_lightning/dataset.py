@@ -274,13 +274,6 @@ class PreprocessingDataset(Dataset):
             audio_lrs3_file)
 
 
-
-        # Debug Statements
-        print(f"[DEBUG] Sample Index: {idx}")
-        print(f"[DEBUG] Preprocessed Audio Shape: {preprocessed_audio.shape}")  # Expected: [seq_len, channels]
-        print(f"[DEBUG] Preprocessed Video Shape: {preprocessed_video.shape}")  # Adjust based on your encoding
-
-
         sample = {
             'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
             'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
