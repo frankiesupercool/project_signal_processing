@@ -44,6 +44,13 @@ class TransformerModel(nn.Module):
         Returns:
             clean_audio: Tensor of shape (batch_size, clean_audio_length)
         """
+        if encoded_video.dim() == 4 and encoded_video.size(1) == 1:
+            encoded_video = encoded_video.squeeze(1)  # (batch_size, video_seq_len, video_dim)
+            print(f"encoded_video shape after squeeze: {encoded_video.shape}")
+        elif encoded_video.dim() == 4 and encoded_video.size(1) > 1:
+            # Handle multiple channels if applicable
+            encoded_video = encoded_video.mean(dim=1)  # Example: Average over channels
+            print(f"encoded_video shape after averaging channels: {encoded_video.shape}")
         # use projection for same dimension, otherwise adding data + positional + modality_enc would not work
         audio_proj = self.audio_proj(encoded_audio)  # (batch_size, audio_seq_len, embed_dim)
         video_proj = self.video_proj(encoded_video)  # (batch_size, video_seq_len, embed_dim)
