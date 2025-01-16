@@ -216,33 +216,21 @@ class PreprocessingDataset(Dataset):
 
 
         elif mode == 'noise':
-
             # Speech Enhancement: Add background noise from DNS
-
             max_retries = 2
-
             retries = 0
-
-            interfering_waveform = None
-
             while retries <= max_retries:
-
                 idx_dns = random.randint(1, self.dns_files_len)
                 dns_file = linecache.getline(self.dns_files_list, idx_dns).strip()
                 interfering_waveform, orig_sample_rate = torchaudio.load(dns_file)
-
                 # Calculate interference power
                 interference_power = (interfering_waveform.norm(p=2)) ** 2
-
                 if interference_power > 0:
                     # Successfully found a valid file
                     break
-
                 # Retry logic if power is zero
-
                 print(f"Retry {retries + 1}/{max_retries}: Interference power is zero for file {dns_file}")
                 retries += 1
-
             if retries > max_retries:
                 raise ValueError(f"All retries failed: Unable to find valid DNS file after {max_retries + 1} attempts.")
 
