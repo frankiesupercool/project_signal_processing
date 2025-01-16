@@ -9,15 +9,17 @@ from video_encoding.models.swish import Swish
 
 
 class VideoEncoder(nn.Module):
-    def __init__( self, modality='video',
+    def __init__( self,
                   backbone_type='resnet',
                   num_classes=500,
                   relu_type='prelu',
                   densetcn_options={},
-                  use_boundary=False):
+                  use_boundary=False,
+                  extract_feats=True,):
         super(VideoEncoder, self).__init__()
         self.backbone_type = backbone_type
         self.use_boundary = use_boundary
+        self.extract_feats = extract_feats
 
         #Standard options for ResNet
         self.frontend_nout = 64
@@ -63,6 +65,19 @@ class VideoEncoder(nn.Module):
 
 
     def forward(self, x, lengths, boundaries=None):
+        """
+            Standard forward pass for the model. Starts by using a CNN then the resnet and lastly the tcn. TCN is not
+            used if model is used just for encoding.
+
+            Args:
+                x: input to the model
+                lengths: lengths of the sequence
+                boundaries: boundaries of the sequence
+
+            Returns:
+                Tensor: output of the tcn or dtcn. Not used if the model is just used as a encoder.
+
+        """
         B, C, T, H, W = x.size()
         x = self.frontend3D(x)
         Tnew = x.shape[2]    # output should be B x C2 x Tnew x H x W
@@ -75,10 +90,18 @@ class VideoEncoder(nn.Module):
         if self.use_boundary:
             x = torch.cat([x, boundaries], dim=-1)
 
-        return self.tcn(x, lengths, B)
+        return x if self.extract_feats else self.tcn(x, lengths, B)
 
 
     def _initialize_weights_randomly(self):
+        """
+            Initialises all weights of the video encoder randomly. Overwritten when loading a model
+
+            Args:
+
+            Returns:
+
+        """
 
         use_sqrt = True
 

@@ -1,5 +1,6 @@
 import os
 import torch
+from numpy.lib.function_base import extract
 
 from video_encoding.models.video_encoder_model import VideoEncoder
 
@@ -16,7 +17,7 @@ class VideoPreprocessingService:
                  relu_type: str,
                  num_classes: int,
                  backbone_type: str,
-                 densetcn_options
+                 densetcn_options: dict
                  ):
         self.allow_size_mismatch = allow_size_mismatch
         self.model_path = model_path
@@ -25,25 +26,45 @@ class VideoPreprocessingService:
         self.num_classes = num_classes
         self.backbone_type = backbone_type
         self.densetcn_options = densetcn_options
+        self.feature_extraction_mode = True
 
-        self.create_model()
-        self.model = self.load_model(self.model_path, self.model, allow_size_mismatch=self.allow_size_mismatch)
+        # Create the model
+        self.create_model(num_classes=self.num_classes,
+                          densetcn_options=self.densetcn_options,
+                          backbone_type=self.backbone_type,
+                          relu_type=self.relu_type,
+                          use_boundary=self.use_boundary,
+                          extract_feats=self.feature_extraction_mode)
+        #Load the model from the lrw_resnet18_dctcn_video_boundary.pth file
+        self.model = self.load_model(load_path=self.model_path,
+                                     model=self.model,
+                                     allow_size_mismatch=self.allow_size_mismatch)
 
 
 
-    def create_model(self):
+    def create_model(self,
+                     num_classes: int,
+                     densetcn_options: dict,
+                     backbone_type: str = 'resnet',
+                     relu_type: str = 'relu',
+                     use_boundary: bool = True,
+                     extract_feats:bool = True):
+        """
+            Creates the model using the in the paper given specifications of using a resnet and swish relu.
+            It is essential that extract_feats is set to True such that the model only does the feature extraction.
 
-        # Define model parameters form json lrw_resnet18_dctcn_boundary.json
-        backbone_type = "resnet"
-        relu_type = "swish"
-        use_boundary = False
+            Args:
 
+            Returns:
+
+        """
         # Initialise Model
-        self.model = VideoEncoder(num_classes=self.num_classes,
-                           densetcn_options=self.densetcn_options,
+        self.model = VideoEncoder(num_classes=num_classes,
+                           densetcn_options=densetcn_options,
                            backbone_type=backbone_type,
                            relu_type=relu_type,
-                           use_boundary=use_boundary).to(device)
+                           use_boundary=use_boundary,
+                           extract_feats=extract_feats).to(device)
 
     def generate_encodings(self, data):
         encoded = self.extract_feats(self.model, data)
@@ -82,7 +103,19 @@ class VideoPreprocessingService:
         return model
 
     @staticmethod
-    def extract_feats(model, data):
+    def extract_feats(model: VideoEncoder, data):
+        """
+            Method used to extract the features of the model before they are passed to the TCN. Used as an encoder.
+
+            Args:
+                data:
+                model:
+
+            Returns:
+                Tensor:
+
+        """
+        assert model.extract_feats == True
         input_tensor = torch.FloatTensor(data)[None, None, :, :, :].to(device)  # Shape: [1, 1, 100, 96, 96]
         lengths = [data.shape[0]]
         output = model(input_tensor, lengths=lengths)
