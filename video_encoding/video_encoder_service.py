@@ -1,10 +1,11 @@
 import os
 import torch
 from numpy.lib.function_base import extract
+from utils.device_utils import get_device
 
 from video_encoding.models.video_encoder_model import VideoEncoder
 
-device = torch.device("cpu")
+device = get_device()
 
 
 
