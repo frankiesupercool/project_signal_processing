@@ -25,7 +25,7 @@ densetcn_options = {
 # video model and processing configurations
 allow_size_mismatch = True
 MODEL_PATH = './video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
-use_boundary = True
+use_boundary = False
 relu_type = "swish"
 num_classes = 500
 backbone_type = "resnet"
