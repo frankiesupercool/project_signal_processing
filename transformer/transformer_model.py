@@ -61,19 +61,20 @@ class TransformerModel(nn.Module):
                 nn.ReLU(),
                 nn.Linear(1024, 64000)  # Map to waveform length
             )
-    def _encode_audio(self, audio):
-        def _encode_audio(self, audio):
-            print(f"[DEBUG] Input to _encode_audio: {audio.shape}")
-            with torch.no_grad():
-                encoded_audio = audio
-                for i, layer in enumerate(self.encoder):
-                    encoded_audio = layer(encoded_audio)
-                    print(f"[DEBUG] After layer {i}: shape = {encoded_audio.shape}")
 
-            # Remove batch dimension after encoding
-            encoded_audio = encoded_audio.squeeze(0)
-            encoded_audio = encoded_audio.permute(1, 0)
-            return encoded_audio
+    def _encode_audio(self, audio):
+        print(f"[DEBUG] Input to _encode_audio: {audio.shape}")
+        with torch.no_grad():
+            encoded_audio = audio
+            for i, layer in enumerate(self.encoder):
+                encoded_audio = layer(encoded_audio)
+                print(f"[DEBUG] After layer {i}: shape = {encoded_audio.shape}")
+
+        # permute to [batch_size, seq_len, embed_dim]
+        encoded_audio = encoded_audio.permute(0, 2, 1)  # [64, 61, 1024]
+        print(f"[DEBUG] Permuted Encoded Audio Shape: {encoded_audio.shape}")
+        return encoded_audio
+
 
     def _encode_video(self, video):
         encoded_video = self.lipreading_preprocessing.generate_encodings(video)
