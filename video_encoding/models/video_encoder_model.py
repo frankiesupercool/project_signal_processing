@@ -78,6 +78,8 @@ class VideoEncoder(nn.Module):
                 Tensor: output of the tcn or dtcn. Not used if the model is just used as a encoder.
 
         """
+        # x is now [batch_size, frames, 96, 96]
+        # If you want an explicit channel dimension:
         B, C, T, H, W = x.size()
         x = self.frontend3D(x)
         Tnew = x.shape[2]    # output should be B x C2 x Tnew x H x W

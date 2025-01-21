@@ -3,10 +3,9 @@ import torch
 from numpy.lib.function_base import extract
 
 from video_encoding.models.video_encoder_model import VideoEncoder
+from utils.device_utils import get_device
 
-device = torch.device("cpu")
-
-
+device = get_device()
 
 class VideoPreprocessingService:
 
@@ -68,8 +67,7 @@ class VideoPreprocessingService:
 
     def generate_encodings(self, data):
         encoded = self.extract_feats(self.model, data)
-        # print(f"Raw encoded shape: {encoded.shape}")  # Debugging statement
-        return encoded.to(device).detach().numpy()
+        return encoded.to(device)
 
     @staticmethod
     def load_model(load_path, model, optimizer=None, allow_size_mismatch=False):
@@ -81,7 +79,7 @@ class VideoPreprocessingService:
 
         # -- load dictionary
         assert os.path.isfile(load_path), "Error when loading the model, provided path not found: {}".format(load_path)
-        checkpoint = torch.load(load_path, map_location=torch.device('cpu'), weights_only=True)
+        checkpoint = torch.load(load_path, map_location=device, weights_only=True)
         loaded_state_dict = checkpoint['model_state_dict']
 
         if allow_size_mismatch:
@@ -116,11 +114,23 @@ class VideoPreprocessingService:
 
         """
         assert model.extract_feats == True
-        input_tensor = torch.FloatTensor(data)[None, None, :, :, :].to(device)  # Shape: [1, 1, 100, 96, 96]
-        lengths = [data.shape[0]]
-        output = model(input_tensor, lengths=lengths)
+        # Avoid using torch.tensor on existing tensors. Use clone().detach() if data is a tensor,
+        # or torch.from_numpy() if data is a NumPy array.
+        if isinstance(data, torch.Tensor):
+            input_tensor = data.clone().detach().float()
+        else:
+            input_tensor = torch.from_numpy(data).float()
 
-        # print(f"Model output shape: {output.shape}")  # Debugging statement
+        # Add channel dimension at position 1: [batch_size, 1, frames, 96, 96]
+        input_tensor = input_tensor.unsqueeze(1)
+
+        input_tensor = input_tensor.to(device)
+
+        # Assuming all samples have the same number of frames
+        lengths = [data.shape[1]] * data.shape[0]  # [frames, frames, ..., frames]
+        with torch.no_grad():
+            output = model(input_tensor, lengths=lengths)
+
         return output
 
 

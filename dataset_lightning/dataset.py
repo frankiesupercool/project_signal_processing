@@ -10,7 +10,7 @@ from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimpl
 
 
 class PreprocessingDataset(Dataset):
-    def __init__(self, lrs3_root, dns_root, densetcn_options,allow_size_mismatch, backbone_type, use_boundary, relu_type, num_classes, model_path, snr_db=0, transform=None, sample_rate=16000,
+    def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
                  mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000):
 
         # todo fixed_frames ?
@@ -33,19 +33,7 @@ class PreprocessingDataset(Dataset):
         self.mode_prob = mode_prob
         self.fixed_length = fixed_length  # Fixed length for audio samples
 
-        # Initialise Video
-        self.densetcn_options = densetcn_options
-        self.allow_size_mismatch = allow_size_mismatch
-        self.backbone_type = backbone_type
-        self.use_boundary = use_boundary
-        self.relu_type = relu_type
-        self.num_classes = num_classes
-        self.model_path = model_path
 
-        # Load the pretrained denoiser model
-        self.model = pretrained.dns64()
-        # Initialize the denoiser encoder
-        self.encoder = self.model.encoder
 
         # Save paired file paths to a single text file
         self.paired_files_list = 'paired_files.txt'
@@ -65,14 +53,6 @@ class PreprocessingDataset(Dataset):
         if len(self.speakers) < 2:
             raise ValueError("Need at least two speakers in LRS3 dataset for speaker separation.")
 
-        self.lipreading_preprocessing = VideoPreprocessingService(
-            allow_size_mismatch,
-            model_path,
-            use_boundary,
-            relu_type,
-            num_classes,
-            backbone_type,
-            densetcn_options)
         self.video_processor = VideoPreprocessorSimple(target_frames=100, fps=25.0)
 
     def _write_paired_file_list(self, root_dir, output_file, audio_ext='.wav', video_ext='.mp4'):
@@ -149,7 +129,7 @@ class PreprocessingDataset(Dataset):
             waveform = torch.nn.functional.pad(waveform, (0, padding))
         return waveform
 
-    def add_noise_with_snr(self, speech, interference, snr_db):
+    def add_noise_with_snr(self, speech, interference, snr_db, epsilon=1e-10):
         """
         Mixes speech with interference (noise or another speaker) at the specified SNR.
 
@@ -157,20 +137,25 @@ class PreprocessingDataset(Dataset):
             speech (torch.Tensor): Clean speech waveform.
             interference (torch.Tensor): Interfering waveform (noise or another speaker's speech).
             snr_db (float): Desired Signal-to-Noise Ratio in decibels.
+            epsilon (float): Small constant to prevent division by zero.
 
         Returns:
             torch.Tensor: Mixed waveform.
         """
         # Calculate power of speech and interference
-        speech_power = (speech.norm(p=2)) ** 2
-        interference_power = (interference.norm(p=2)) ** 2
+        speech_power = speech.norm(p=2).pow(2)
+        interference_power = interference.norm(p=2).pow(2) + epsilon  # Prevent division by zero
 
         # Calculate the scaling factor for interference to achieve desired SNR
         snr_linear = 10 ** (snr_db / 10)
         scaling_factor = speech_power / (interference_power * snr_linear)
 
+        # Prevent scaling_factor from becoming too large
+        max_scaling = 1e3
+        scaling_factor = torch.clamp(scaling_factor, max=max_scaling)
+
         # Scale interference and mix
-        interference_scaled = interference * scaling_factor.sqrt()
+        interference_scaled = interference * torch.sqrt(scaling_factor)
         mixed = speech + interference_scaled
 
         return mixed
@@ -272,21 +257,12 @@ class PreprocessingDataset(Dataset):
         mixture = self.add_noise_with_snr(speech_waveform, interfering_waveform, self.snr_db)
 
         # Add channel and batch dimensions before encoding
-        mixture = mixture.unsqueeze(0).unsqueeze(0)  # Shape: [1, 1, samples]
+        mixture = mixture.unsqueeze(0)  # Shape: [1, 1, samples]
 
-        # Encode using denoiser's encoder
-        with torch.no_grad():
-            encoded_audio = mixture
-            for layer in self.encoder:
-                encoded_audio = layer(encoded_audio)
-
-        # Remove batch dimension after encoding
-        encoded_audio = encoded_audio.squeeze(0)  # Shape: [channels, encoded_length]
-
-        return encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type
+        return mixture, speech_waveform, interfering_waveform, interference_type
 
     def _preprocess_video(self, file_path: str):
-        return self.lipreading_preprocessing.generate_encodings(self.video_processor.crop_video_96_96(file_path))
+        return self.video_processor.crop_video_96_96(file_path)
 
     def __getitem__(self, idx):
         # Read the paired file paths from the text file
@@ -298,17 +274,14 @@ class PreprocessingDataset(Dataset):
         # print(f"Processing Audio: {audio_lrs3_file} | Video: {video_lrs3_file}")
 
 
-        encoded_video = self._preprocess_video(video_lrs3_file)
-        encoded_audio, mixture, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
+        preprocessed_video = self._preprocess_video(video_lrs3_file)
+        preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
-
-        # Transpose encoded_audio from [batch_size, channels, seq_len] to [batch_size, seq_len, channels]
-        encoded_audio = encoded_audio.permute(1, 0)  # [batch_size, seq_len, channels]
 
 
         sample = {
-            'encoded_audio': encoded_audio,
-            'encoded_video': encoded_video,  # Shape: [100, 96, 96]
+            'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
+            'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
             'clean_speech': speech_waveform,  # Shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file

@@ -10,13 +10,6 @@ class DataModule(pl.LightningDataModule):
             trainval_root,
             test_root,
             dns_root,
-            densetcn_options,
-            allow_size_mismatch,
-            model_path,
-            use_boundary,
-            relu_type,
-            num_classes,
-            backbone_type,
             snr_db=0,
             transform=None,
             sample_rate=16000,
@@ -60,14 +53,7 @@ class DataModule(pl.LightningDataModule):
         self.fixed_length = fixed_length
         self.fixed_frames = fixed_frames
         self.seed = seed
-        # Audio options
-        self.densetcn_options = densetcn_options
-        self.allow_size_mismatch = allow_size_mismatch
-        self.backbone_type = backbone_type
-        self.use_boundary = use_boundary
-        self.relu_type = relu_type
-        self.num_classes = num_classes
-        self.model_path = model_path
+
 
         # Placeholders for x_datasets
         self.pretrain_dataset = None
@@ -92,13 +78,6 @@ class DataModule(pl.LightningDataModule):
         """
         general_config = {
             'dns_root': self.dns_root,
-            'densetcn_options': self.densetcn_options,
-            'allow_size_mismatch': self.allow_size_mismatch,
-            'backbone_type': self.backbone_type,
-            'use_boundary': self.use_boundary,
-            'relu_type': self.relu_type,
-            'num_classes': self.num_classes,
-            'model_path': self.model_path,
             'snr_db': self.snr_db,
             'transform': self.transform,
             'sample_rate': self.sample_rate,
