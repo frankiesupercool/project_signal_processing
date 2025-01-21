@@ -186,7 +186,7 @@ def check_speech_waveform(speech_waveform, orig_sample_rate, file_path):
         print(f"Warning: Potential clipping in file: {file_path}")
 
 
-def check_encode(mixture, encoder):
+def check_encode(mixture, encoder, wav_path):
     with torch.no_grad():
         encoded_audio = mixture
         for layer in encoder:
@@ -197,12 +197,13 @@ def check_encode(mixture, encoder):
 
     if encoded_audio.numel() == 0:
         print("Error: Encoded audio tensor is empty.")
+        print("File:", wav_path)
     elif torch.isnan(encoded_audio).any():
             print("Warning: Encoded audio contains NaN values.")
+            print("File:", wav_path)
     elif torch.isinf(encoded_audio).any():
         print("Warning: Encoded audio contains infinite values.")
-    else:
-        print("Encoded audio tensor is valid.")
+        print("File:", wav_path)
 
 
 def test_lrs3_files(folder, noise_folder, encoder):
@@ -238,7 +239,7 @@ def test_lrs3_files(folder, noise_folder, encoder):
                 mixture = check_mixture(speech_waveform, wav_path, noise_folder)
 
                 # check encoder
-                check_encode(mixture, encoder)
+                check_encode(mixture, encoder, wav_path)
 
     print("Correct file from basic check:", count)
 
