@@ -197,10 +197,12 @@ def check_encode(mixture, encoder):
 
     if encoded_audio.numel() == 0:
         print("Error: Encoded audio tensor is empty.")
-        if torch.isnan(encoded_audio).any():
+    elif torch.isnan(encoded_audio).any():
             print("Warning: Encoded audio contains NaN values.")
-        if torch.isinf(encoded_audio).any():
-            print("Warning: Encoded audio contains infinite values.")
+    elif torch.isinf(encoded_audio).any():
+        print("Warning: Encoded audio contains infinite values.")
+    else:
+        print("Encoded audio tensor is valid.")
 
 
 def test_lrs3_files(folder, noise_folder, encoder):
