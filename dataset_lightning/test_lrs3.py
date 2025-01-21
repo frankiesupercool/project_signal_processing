@@ -131,7 +131,7 @@ def check_mixture(speech_waveform, lrs3_file, noise_folder):
     mixture = mixture.unsqueeze(0).unsqueeze(0)  # Shape: [1, 1, samples]
     if mixture.shape != torch.Size([1, 1, 64000]):
         print("Mixture shape not 1,1,sample for", lrs3_file)
-    return mixture
+    return mixture, interference_type
 
 
 def check_lrs3_audio(file_path):
@@ -186,7 +186,7 @@ def check_speech_waveform(speech_waveform, orig_sample_rate, file_path):
         print(f"Warning: Potential clipping in file: {file_path}")
 
 
-def check_encode(mixture, encoder, wav_path):
+def check_encode(mixture, encoder, wav_path, interference_type):
     with torch.no_grad():
         encoded_audio = mixture
         for layer in encoder:
@@ -198,12 +198,15 @@ def check_encode(mixture, encoder, wav_path):
     if encoded_audio.numel() == 0:
         print("Error: Encoded audio tensor is empty.")
         print("File:", wav_path)
+        print("Interference type:", interference_type)
     elif torch.isnan(encoded_audio).any():
             print("Warning: Encoded audio contains NaN values.")
             print("File:", wav_path)
+            print("Interference type:", interference_type)
     elif torch.isinf(encoded_audio).any():
         print("Warning: Encoded audio contains infinite values.")
         print("File:", wav_path)
+        print("Interference type:", interference_type)
 
 
 def test_lrs3_files(folder, noise_folder, encoder):
@@ -232,14 +235,14 @@ def test_lrs3_files(folder, noise_folder, encoder):
 
                 # pad or truncate check
                 speech_waveform = pad_or_truncate(speech_waveform, 64000)
-                check_speech_waveform(speech_waveform, orig_sample_rate, wav_path)
+                #check_speech_waveform(speech_waveform, orig_sample_rate, wav_path)
 
                 # todo check between inferring and mixture?
                 # check mixture
-                mixture = check_mixture(speech_waveform, wav_path, noise_folder)
+                mixture, interference_type = check_mixture(speech_waveform, wav_path, noise_folder)
 
                 # check encoder
-                check_encode(mixture, encoder, wav_path)
+                check_encode(mixture, encoder, wav_path, interference_type)
 
     print("Correct file from basic check:", count)
 
