@@ -53,6 +53,10 @@ class TransformerModel(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True).to(self.device)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers).to(self.device)
 
+        # projection layer
+        self.proj_to_decoder = nn.Linear(embed_dim, 1024).to(self.device)
+        self.final_projection = nn.Linear(166228, 64000).to(self.device)
+
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
             self.denoiser_decoder = denoiser_decoder.to(self.device)  # Pretrained denoiser's decoder
@@ -74,6 +78,19 @@ class TransformerModel(nn.Module):
         # permute to [batch_size, seq_len, embed_dim]
         encoded_audio = encoded_audio.permute(0, 2, 1)  # [64, 61, 1024]
         return encoded_audio
+
+    def _decode_audio(self, audio):
+        with torch.no_grad():
+            decoded_audio = self.proj_to_decoder(audio)
+            # Permute to match Conv1d expected input: [batch_size, channels, seq_len]
+            decoded_audio = decoded_audio.permute(0, 2, 1)  # Shape: [batch_size, 1024, seq_len]
+            for i , layer in enumerate(self.denoiser_decoder):
+                decoded_audio = layer(decoded_audio)
+            if decoded_audio.size(1) == 1 and decoded_audio.size(2) == 166228:
+                decoded_audio = decoded_audio.squeeze(1)
+                decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
+
+        return decoded_audio
 
 
     def _encode_video(self, video):
@@ -120,9 +137,9 @@ class TransformerModel(nn.Module):
         transformer_output = self.transformer_encoder(transformer_input)  # (total_seq_len, batch_size, embed_dim)
         transformer_output = transformer_output.transpose(0, 1)  # (batch_size, total_seq_len, embed_dim)
 
-        aggregated_output = torch.mean(transformer_output, dim=1)  # (batch_size, embed_dim)
+        #aggregated_output = torch.mean(transformer_output, dim=1)  # (batch_size, embed_dim)
         # Decode to clean audio
-        clean_audio = self.denoiser_decoder(aggregated_output)  # (batch_size, total_seq_len, 64000)
+        clean_audio = self._decode_audio(transformer_output) # (batch_size, total_seq_len, 64000)
         # Check for NaNs or Infs in output
         if not torch.isfinite(clean_audio).all():
             raise ValueError("Model output contains NaNs or Infs")
