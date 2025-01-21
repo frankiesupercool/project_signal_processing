@@ -9,3 +9,4 @@ dataset_lightning/paired_files.txt
 dns_files.txt
 paired_files.txt
 lightning_logs/
+checkpoints/
