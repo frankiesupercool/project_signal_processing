@@ -55,8 +55,9 @@ class TransformerModel(nn.Module):
 
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
-            self.denoiser_decoder = denoiser_decoder.to(device)  # Pretrained denoiser's decoder
+            self.denoiser_decoder = denoiser_decoder.to(self.device)  # Pretrained denoiser's decoder
         else:
+            print("Warning: denoiser is None! Fallback to simple upsampling decoder")
             # Define a simple upsampling decoder if no denoiser decoder is provided
             self.denoiser_decoder = nn.Sequential(
                 nn.Linear(embed_dim, 1024),

@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import torch
 import os
+from denoiser import pretrained
 from dataset_lightning.lightning_datamodule import DataModule
 from transformer.AV_transformer import AudioVideoTransformer
 from transformer.transformer_model import TransformerModel
@@ -16,6 +17,9 @@ def test():
     trainval_root = config.TRAINVAL_DATA_PATH
     test_root = config.TEST_DATA_PATH
     dns_root = config.DNS_DATA_PATH
+
+    audio_model = pretrained.dns64()
+    denoiser_decoder = audio_model.decoder
 
     for path in [pretrain_root, trainval_root, test_root, dns_root]:
         if not os.path.isdir(path):
@@ -55,7 +59,7 @@ def test():
         num_layers=3,
         dim_feedforward=532,
         max_seq_length=1024,
-        denoiser_decoder=None
+        denoiser_decoder=denoiser_decoder
     )
 
     # load best checkpoint
