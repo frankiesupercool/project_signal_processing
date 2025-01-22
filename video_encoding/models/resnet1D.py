@@ -2,8 +2,13 @@
 import math
 import torch.nn as nn
 
-from lipreading_preprocessing.models.swish import Swish
+from video_encoding.models.swish import Swish
 
+"""Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With
+implementation from:
+
+https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
+"""
 
 def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv1d(in_planes, out_planes, kernel_size=3, stride=stride,

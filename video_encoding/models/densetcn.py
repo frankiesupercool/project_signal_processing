@@ -6,6 +6,12 @@ from video_encoding.models.se_module import SELayer
 from video_encoding.models.swish import Swish
 
 
+"""Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With
+implementation from:
+
+https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
+"""
+
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size, symm_chomp):
         super(Chomp1d, self).__init__()

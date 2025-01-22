@@ -4,6 +4,12 @@ import torch.nn as nn
 from video_encoding.models.densetcn import DenseTemporalConvNet
 
 
+"""Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With 
+implementation from:
+
+https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
+"""
+
 class DenseTCN(nn.Module):
     def __init__( self, block_config, growth_rate_set, input_size, reduced_size, num_classes,
                   kernel_size_set, dilation_size_set,

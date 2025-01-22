@@ -6,7 +6,7 @@ from transformer.modality_encoder import ModalityEncoder
 from transformer.positional_encoder import PositionalEncoder
 from denoiser import pretrained
 import linecache  # Import linecache for reading specific lines from files
-from video_encoding.video_encoder_service import VideoPreprocessingService
+from video_encoding.video_encoder_service import VideoEncodingService
 from utils.device_utils import get_device
 
 class TransformerModel(nn.Module):
@@ -28,7 +28,7 @@ class TransformerModel(nn.Module):
         self.model_path = model_path
         self.device = get_device()
 
-        self.lipreading_preprocessing = VideoPreprocessingService(
+        self.video_encoding_service = VideoEncodingService(
             allow_size_mismatch,
             model_path,
             use_boundary,
@@ -76,10 +76,11 @@ class TransformerModel(nn.Module):
 
 
     def _encode_video(self, video):
-        encoded_video = self.lipreading_preprocessing.generate_encodings(video)
+        encoded_video = self.video_encoding_service.generate_encodings(video)
         encoded_video = encoded_video.squeeze(0)
         return encoded_video
 
+    # TODO rename preprocessed_audio and preprocessed_video maybe
     def forward(self, preprocessed_audio, preprocessed_video):
         """
         Args:

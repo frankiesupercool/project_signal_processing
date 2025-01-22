@@ -1,12 +1,18 @@
 import torch
 import torch.nn as nn
 
-from lipreading_preprocessing.models.swish import Swish
+from video_encoding.models.swish import Swish
 
-"""Implements Temporal Convolutional Network (TCN)
+"""Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With adapted
+implementation from:
 
-__https://arxiv.org/pdf/1803.01271.pdf
+https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
+
+Which intern used the implementation of Temporal Convolutional Network (TCN) from:
+
+https://arxiv.org/pdf/1803.01271.pdf
 """
+
 
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size, symm_chomp):

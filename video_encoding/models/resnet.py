@@ -1,8 +1,16 @@
 
 import math
+from typing import List
+
 import torch.nn as nn
 
 from video_encoding.models.swish import Swish
+
+"""Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With
+implementation from:
+
+https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
+"""
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -48,7 +56,6 @@ class BasicBlock(nn.Module):
             self.relu2 = Swish()
         else:
             raise Exception('relu type not implemented')
-        # --------
 
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = nn.BatchNorm2d(planes)
@@ -74,7 +81,24 @@ class BasicBlock(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000, relu_type = 'relu', gamma_zero = False, avg_pool_downsample = False):
+    def __init__(self, block,
+                 layers: List[int],
+                 num_classes=1000,
+                 relu_type:str = 'relu',
+                 gamma_zero:bool = False,
+                 avg_pool_downsample:bool = False):
+        """
+        Implementation of the ResNet architecture.
+
+        Args:
+            block: Backbone used in the encoder. ResNet standard as given in the paper.
+            layers (List[int]): Number of layers.
+            num_classes (int): Number of classes in the dataset.
+            relu_type (str): Activation function to use.
+            gamma_zero (bool):
+            avg_pool_downsample (bool):
+        """
+
         self.inplanes = 64
         self.relu_type = relu_type
         self.gamma_zero = gamma_zero
