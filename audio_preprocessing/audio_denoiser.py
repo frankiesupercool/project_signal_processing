@@ -8,13 +8,13 @@ from utils.device_utils import get_device, set_seed
 device = get_device()
 
 model = pretrained.dns64()
-encoder = model.encoder.to(device)
+encoder = model.encoder
 decoder = model.decoder
 
 
 wav, sr = torchaudio.load('../data/pretrain/aySy3tSYGYw/00001.wav')
 wav = convert_audio(wav, sr, model.sample_rate, model.chin)
-wav = wav.to(device)
+wav = wav
 
 if wav.dim() == 2:
     # Assuming wav shape is [channels, samples], add batch dimension

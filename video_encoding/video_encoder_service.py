@@ -63,11 +63,11 @@ class VideoPreprocessingService:
                            backbone_type=backbone_type,
                            relu_type=relu_type,
                            use_boundary=use_boundary,
-                           extract_feats=extract_feats).to(device)
+                           extract_feats=extract_feats)
 
     def generate_encodings(self, data):
         encoded = self.extract_feats(self.model, data)
-        return encoded.to(device)
+        return encoded
 
     @staticmethod
     def load_model(load_path, model, optimizer=None, allow_size_mismatch=False):
@@ -124,7 +124,7 @@ class VideoPreprocessingService:
         # Add channel dimension at position 1: [batch_size, 1, frames, 96, 96]
         input_tensor = input_tensor.unsqueeze(1)
 
-        input_tensor = input_tensor.to(device)
+        input_tensor = input_tensor
 
         # Assuming all samples have the same number of frames
         lengths = [data.shape[1]] * data.shape[0]  # [frames, frames, ..., frames]
