@@ -51,14 +51,6 @@ class AudioVideoTransformer(pl.LightningModule):
          2) If found, log and skip the batch.
          3) Otherwise, perform forward pass, compute loss, and log 'train_loss'.
         """
-
-        batch_size = batch[0].size(0) if isinstance(batch, (list, tuple)) and isinstance(batch[0],
-                                                                                         torch.Tensor) else None
-        memory_usage = get_batch_memory_usage(batch)
-        print(f"Batch size: {batch_size}, Memory usage: {memory_usage / (1024 ** 2):.2f} MB")
-
-        print(f"\n--- Batch {batch_idx + 1} ---")
-
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
