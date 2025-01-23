@@ -84,11 +84,12 @@ def train():
 
     # 5) Setup trainer
     trainer = pl.Trainer(
-        max_epochs=100,             # set to a higher number; early stopping may stop earlier
-        accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=1,
-        callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=1
+        max_epochs=100,
+        strategy = 'ddp',
+        accelerator='gpu',
+        devices=2,
+        precision=16,
+        log_every_n_steps=100
     )
 
     # 6) Train the model
