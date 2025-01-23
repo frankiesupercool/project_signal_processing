@@ -17,8 +17,8 @@ class DataModule(pl.LightningDataModule):
             mode_prob={'speaker': 0.5, 'noise': 0.5},
             batch_size=config.batch_size,
             num_workers=config.num_workers,
-            fixed_length=64000,
-            fixed_frames=100,
+            fixed_length=config.fixed_length,
+            fixed_frames=config.fixed_frames,
             seed=42,
     ):
         """

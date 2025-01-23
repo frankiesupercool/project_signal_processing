@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+import config
 from config import batch_size
 from transformer.modality_encoder import ModalityEncoder
 from transformer.positional_encoder import PositionalEncoder
@@ -55,7 +56,7 @@ class TransformerModel(nn.Module):
 
         # projection layer
         self.proj_to_decoder = nn.Linear(embed_dim, 1024).to(self.device)
-        self.final_projection = nn.Linear(166228, 64000).to(self.device)
+        self.final_projection = nn.Linear(166228, config.fixed_length).to(self.device)
 
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
@@ -66,7 +67,7 @@ class TransformerModel(nn.Module):
             self.denoiser_decoder = nn.Sequential(
                 nn.Linear(embed_dim, 1024),
                 nn.ReLU(),
-                nn.Linear(1024, 64000)  # Map to waveform length
+                nn.Linear(1024, config.fixed_length)  # Map to waveform length
             ).to(self.device)
 
     def _encode_audio(self, audio):
