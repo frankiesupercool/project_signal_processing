@@ -78,9 +78,10 @@ def test():
 
     # setup trainer
     trainer = pl.Trainer(
-        accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=1,
-        log_every_n_steps=1
+        accelerator='ddp',
+        gpus=[0,1],
+        precision = 16,
+        log_every_n_steps=100
     )
 
     # test loop
