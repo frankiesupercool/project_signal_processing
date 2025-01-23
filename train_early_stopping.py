@@ -85,7 +85,6 @@ def train():
     # 5) Setup trainer
     trainer = pl.Trainer(
         max_epochs=100,
-        strategy = 'ddp',
         accelerator='gpu',
         devices=2,
         precision=16,
