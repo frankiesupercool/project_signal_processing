@@ -45,11 +45,6 @@ def test_preprocessing_dataset():
     # Fetch a single batch
     for batch_idx, sample_batch in enumerate(dataloader):
 
-        batch_size = sample_batch[0].size(0) if isinstance(sample_batch, (list, tuple)) and isinstance(sample_batch[0],
-                                                                                         torch.Tensor) else None
-        memory_usage = get_batch_memory_usage(sample_batch)
-        print(f"Batch size: {batch_size}, Memory usage: {memory_usage / (1024 ** 2):.2f} MB")
-
         print(f"\n--- Batch {batch_idx + 1} ---")
 
         # Extract batch components
@@ -134,19 +129,6 @@ def visualize_sample(sample_batch, index=0, audio_sample_rate=16000):
         plt.axis('off')
     plt.suptitle("Video Frames")
     plt.show()
-
-def get_tensor_size(tensor):
-    return tensor.element_size() * tensor.nelement()
-
-
-def get_batch_memory_usage(batch):
-    if isinstance(batch, (list, tuple)):
-        return sum(get_batch_memory_usage(b) for b in batch)
-    elif isinstance(batch, torch.Tensor):
-        return get_tensor_size(batch)
-    else:
-        # If the batch contains other kinds of elements, handle them here if needed
-        return 0
 
 if __name__ == "__main__":
     test_preprocessing_dataset()

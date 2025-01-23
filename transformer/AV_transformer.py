@@ -7,6 +7,22 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
+
+
+def get_tensor_size(tensor):
+    return tensor.element_size() * tensor.nelement()
+
+
+def get_batch_memory_usage(batch):
+    if isinstance(batch, (list, tuple)):
+        return sum(get_batch_memory_usage(b) for b in batch)
+    elif isinstance(batch, torch.Tensor):
+        return get_tensor_size(batch)
+    else:
+        # If the batch contains other kinds of elements, handle them here if needed
+        return 0
+
+
 class AudioVideoTransformer(pl.LightningModule):
     def __init__(self, model, learning_rate=1e-5):
         super(AudioVideoTransformer, self).__init__()
@@ -35,6 +51,14 @@ class AudioVideoTransformer(pl.LightningModule):
          2) If found, log and skip the batch.
          3) Otherwise, perform forward pass, compute loss, and log 'train_loss'.
         """
+
+        batch_size = batch[0].size(0) if isinstance(batch, (list, tuple)) and isinstance(batch[0],
+                                                                                         torch.Tensor) else None
+        memory_usage = get_batch_memory_usage(batch)
+        print(f"Batch size: {batch_size}, Memory usage: {memory_usage / (1024 ** 2):.2f} MB")
+
+        print(f"\n--- Batch {batch_idx + 1} ---")
+
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
@@ -193,4 +217,5 @@ class AudioVideoTransformer(pl.LightningModule):
             logger.warning(f"Total skipped test batches this epoch: {self.skipped_batches}")
             # Reset the counter for the next epoch
             self.skipped_batches = 0
+
 
