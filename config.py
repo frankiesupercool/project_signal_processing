@@ -9,7 +9,9 @@ DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/n
 # general configs
 SEED = 42
 batch_size = 8
-num_workers = 8
+num_workers = 2
+fixed_length=16000
+fixed_frames=25
 
 # video encoding options
 densetcn_options = {
@@ -29,12 +31,12 @@ use_boundary = False
 relu_type = "swish"
 num_classes = 500
 backbone_type = "resnet"
-fixed_frames = 100
+
 
 # audio model and processing configurations
 snr_db = 10
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
-fixed_length = 64000
+
 
 #

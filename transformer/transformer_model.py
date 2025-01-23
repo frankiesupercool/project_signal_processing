@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+import config
 from config import batch_size
 from transformer.modality_encoder import ModalityEncoder
 from transformer.positional_encoder import PositionalEncoder
@@ -41,6 +42,8 @@ class TransformerModel(nn.Module):
         self.model = pretrained.dns64()
         # Initialize the denoiser encoder
         self.encoder = self.model.encoder.to(self.device)
+        for param in self.encoder.parameters():
+            param.requires_grad = False
 
         self.audio_proj = nn.Linear(audio_dim, embed_dim).to(self.device)  # Project audio to embed_dim
         self.video_proj = nn.Linear(video_dim, embed_dim).to(self.device)
@@ -55,7 +58,8 @@ class TransformerModel(nn.Module):
 
         # projection layer
         self.proj_to_decoder = nn.Linear(embed_dim, 1024).to(self.device)
-        self.final_projection = nn.Linear(166228, 64000).to(self.device)
+        # TODO change in features so it is a variable
+        self.final_projection = nn.Linear(118100, config.fixed_length).to(self.device)
 
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
@@ -66,29 +70,31 @@ class TransformerModel(nn.Module):
             self.denoiser_decoder = nn.Sequential(
                 nn.Linear(embed_dim, 1024),
                 nn.ReLU(),
-                nn.Linear(1024, 64000)  # Map to waveform length
+                nn.Linear(1024, config.fixed_length)  # Map to waveform length
             ).to(self.device)
 
+        for param in self.denoiser_decoder.parameters():
+            param.requires_grad = False
+
     def _encode_audio(self, audio):
-        with torch.no_grad():
-            encoded_audio = audio
-            for i, layer in enumerate(self.encoder):
-                encoded_audio = layer(encoded_audio)
+        encoded_audio = audio
+        for i, layer in enumerate(self.encoder):
+            encoded_audio = layer(encoded_audio)
 
         # permute to [batch_size, seq_len, embed_dim]
         encoded_audio = encoded_audio.permute(0, 2, 1)  # [64, 61, 1024]
         return encoded_audio
 
     def _decode_audio(self, audio):
-        with torch.no_grad():
-            decoded_audio = self.proj_to_decoder(audio)
-            # Permute to match Conv1d expected input: [batch_size, channels, seq_len]
-            decoded_audio = decoded_audio.permute(0, 2, 1)  # Shape: [batch_size, 1024, seq_len]
-            for i , layer in enumerate(self.denoiser_decoder):
-                decoded_audio = layer(decoded_audio)
-            if decoded_audio.size(1) == 1 and decoded_audio.size(2) == 166228:
-                decoded_audio = decoded_audio.squeeze(1)
-                decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
+        decoded_audio = self.proj_to_decoder(audio)
+        # Permute to match Conv1d expected input: [batch_size, channels, seq_len]
+        decoded_audio = decoded_audio.permute(0, 2, 1)  # Shape: [batch_size, 1024, seq_len]
+        for i , layer in enumerate(self.denoiser_decoder):
+            decoded_audio = layer(decoded_audio)
+        # TODO make this if statement better
+        if decoded_audio.size(1) == 1 and decoded_audio.size(2) != config.fixed_length:
+            decoded_audio = decoded_audio.squeeze(1)
+            decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
 
         return decoded_audio
 
