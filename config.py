@@ -10,8 +10,8 @@ DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/n
 SEED = 42
 batch_size = 8
 num_workers = 2
-fixed_length=16000,
-fixed_frames=25,
+fixed_length=16000
+fixed_frames=25
 
 # video encoding options
 densetcn_options = {
