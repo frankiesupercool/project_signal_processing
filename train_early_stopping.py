@@ -86,7 +86,7 @@ def train():
     trainer = pl.Trainer(
         max_epochs=100,
         accelerator='gpu',
-        devices=2,
+        devices=1,
         precision=16,
         log_every_n_steps=100
     )
