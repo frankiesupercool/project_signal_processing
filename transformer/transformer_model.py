@@ -87,7 +87,8 @@ class TransformerModel(nn.Module):
             decoded_audio = decoded_audio.permute(0, 2, 1)  # Shape: [batch_size, 1024, seq_len]
             for i , layer in enumerate(self.denoiser_decoder):
                 decoded_audio = layer(decoded_audio)
-            if decoded_audio.size(1) == 1 and decoded_audio.size(2) == 166228:
+            # TODO make this if statement better
+            if decoded_audio.size(1) == 1 and decoded_audio.size(2) != config.fixed_length:
                 decoded_audio = decoded_audio.squeeze(1)
                 decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
 
