@@ -10,8 +10,10 @@ DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/n
 SEED = 42
 batch_size = 8
 num_workers = 2
-fixed_length=16000
-fixed_frames=25
+
+# setting sample size to 0.4s
+fixed_length = 6400
+fixed_frames=10
 
 # video encoding options
 densetcn_options = {
@@ -38,5 +40,7 @@ snr_db = 10
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
 
+# trainer
+gpus = [0, 1]
+max_epochs = 100
 
-#
