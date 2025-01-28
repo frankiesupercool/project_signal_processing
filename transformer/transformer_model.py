@@ -57,7 +57,7 @@ class TransformerModel(nn.Module):
         # projection layer
         self.proj_to_decoder = nn.Linear(embed_dim, 1024)
         # TODO change in features so it is a variable
-        self.final_projection = nn.Linear(118100, config.fixed_length)
+        self.final_projection = nn.LazyLinear(config.fixed_length)
 
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
