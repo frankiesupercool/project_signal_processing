@@ -1,10 +1,11 @@
 import os
 import torch
+import torch.nn as nn
 from numpy.lib.function_base import extract
 
 from video_encoding.models.video_encoder_model import VideoEncoder
 
-class VideoPreprocessingService:
+class VideoPreprocessingService(nn.Module):
 
     def __init__(self,
                  allow_size_mismatch: bool,
