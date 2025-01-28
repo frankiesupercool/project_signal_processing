@@ -8,7 +8,6 @@ from transformer.positional_encoder import PositionalEncoder
 from denoiser import pretrained
 import linecache  # Import linecache for reading specific lines from files
 from video_encoding.video_encoder_service import VideoPreprocessingService
-from utils.device_utils import get_device
 
 class TransformerModel(nn.Module):
     """
@@ -27,7 +26,6 @@ class TransformerModel(nn.Module):
         self.relu_type = relu_type
         self.num_classes = num_classes
         self.model_path = model_path
-        self.device = get_device()
 
         self.lipreading_preprocessing = VideoPreprocessingService(
             allow_size_mismatch,
