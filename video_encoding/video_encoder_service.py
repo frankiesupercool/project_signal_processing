@@ -16,6 +16,7 @@ class VideoPreprocessingService(nn.Module):
                  backbone_type: str,
                  densetcn_options: dict
                  ):
+        super(VideoPreprocessingService, self).__init__()
         self.allow_size_mismatch = allow_size_mismatch
         self.model_path = model_path
         self.use_boundary = use_boundary
