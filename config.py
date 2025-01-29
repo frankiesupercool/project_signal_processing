@@ -1,14 +1,14 @@
 # config.py
 
 # data paths
-PRETRAIN_DATA_PATH = "../../../../data/LRS3/pretrain"       # Path to pretraining data
-TRAINVAL_DATA_PATH = "../../../../data/LRS3/trainval"       # Path to training-validation data
-TEST_DATA_PATH = "../../../../data/LRS3/test"               # Path to test data
+PRETRAIN_DATA_PATH = "../../../../data/datasets/LRS3/pretrain"       # Path to pretraining data
+TRAINVAL_DATA_PATH = "../../../../data/datasets/LRS3/trainval"       # Path to training-validation data
+TEST_DATA_PATH = "../../../../data/datasets/LRS3/test"               # Path to test data
 DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
 SEED = 42
-batch_size = 8
+batch_size = 16
 num_workers = 2
 
 # setting sample size to 0.4s
