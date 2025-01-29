@@ -44,3 +44,5 @@ mode_prob = {'speaker': 0.5, 'noise': 0.5}
 gpus = [0, 1]
 max_epochs = 100
 
+# root checkpoint save - public available checkpoints folder on sppc25
+root_checkpoint = "../../../data/datasets/checkpoints/sp2025"

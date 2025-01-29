@@ -76,7 +76,7 @@ def train():
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',        # name of the monitored metric
-        dirpath='checkpoints',     # directory to save checkpoints
+        dirpath=config.root_checkpoint,     # directory to save checkpoints
         filename='best-checkpoint',
         save_top_k=1,              # only save the best model
         mode='min'                 # we want to minimize val_loss
