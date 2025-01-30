@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torchaudio.functional
 
 import config
 from config import batch_size
@@ -7,8 +8,7 @@ from transformer.modality_encoder import ModalityEncoder
 from transformer.positional_encoder import PositionalEncoder
 from denoiser import pretrained
 import linecache  # Import linecache for reading specific lines from files
-from video_encoding.video_encoder_service import VideoEncodingService
-from utils.device_utils import get_device
+from video_encoding.video_encoder_service import VideoPreprocessingService
 
 class TransformerModel(nn.Module):
     """
@@ -27,9 +27,8 @@ class TransformerModel(nn.Module):
         self.relu_type = relu_type
         self.num_classes = num_classes
         self.model_path = model_path
-        self.device = get_device()
 
-        self.video_encoding_service = VideoEncodingService(
+        self.lipreading_preprocessing = VideoPreprocessingService(
             allow_size_mismatch,
             model_path,
             use_boundary,
@@ -41,29 +40,32 @@ class TransformerModel(nn.Module):
         # Load the pretrained denoiser model
         self.model = pretrained.dns64()
         # Initialize the denoiser encoder
-        self.encoder = self.model.encoder.to(self.device)
+        self.encoder = self.model.encoder
         for param in self.encoder.parameters():
             param.requires_grad = False
 
-        self.audio_proj = nn.Linear(audio_dim, embed_dim).to(self.device)  # Project audio to embed_dim
-        self.video_proj = nn.Linear(video_dim, embed_dim).to(self.device)
+        self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
+        self.video_proj = nn.Linear(video_dim, embed_dim)
 
-        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=True).to(self.device)
+        self.upsampled_sample_rate = config.upsampled_sample_rate
+        self.target_rate = config.sample_rate
 
-        self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim).to(self.device)
-        self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim).to(self.device)
+        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=True)
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True).to(self.device)
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers).to(self.device)
+        self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
+        self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
+
+        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # projection layer
-        self.proj_to_decoder = nn.Linear(embed_dim, 1024).to(self.device)
+        self.proj_to_decoder = nn.Linear(embed_dim, 1024)
         # TODO change in features so it is a variable
-        self.final_projection = nn.Linear(118100, config.fixed_length).to(self.device)
+        self.final_projection = nn.Linear(107860, config.fixed_length)
 
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
-            self.denoiser_decoder = denoiser_decoder.to(self.device)  # Pretrained denoiser's decoder
+            self.denoiser_decoder = denoiser_decoder  # Pretrained denoiser's decoder
         else:
             print("Warning: denoiser is None! Fallback to simple upsampling decoder")
             # Define a simple upsampling decoder if no denoiser decoder is provided
@@ -71,7 +73,7 @@ class TransformerModel(nn.Module):
                 nn.Linear(embed_dim, 1024),
                 nn.ReLU(),
                 nn.Linear(1024, config.fixed_length)  # Map to waveform length
-            ).to(self.device)
+            )
 
         for param in self.denoiser_decoder.parameters():
             param.requires_grad = False
@@ -96,15 +98,21 @@ class TransformerModel(nn.Module):
             decoded_audio = decoded_audio.squeeze(1)
             decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
 
+        # down sample
+        decoded_audio = torchaudio.functional.resample(
+            decoded_audio,
+            orig_freq=self.upsampled_sample_rate,
+            new_freq=self.target_rate
+        )
+
         return decoded_audio
 
 
     def _encode_video(self, video):
-        encoded_video = self.video_encoding_service.generate_encodings(video)
+        encoded_video = self.lipreading_preprocessing.generate_encodings(video)
         encoded_video = encoded_video.squeeze(0)
         return encoded_video
 
-    # TODO rename preprocessed_audio and preprocessed_video maybe
     def forward(self, preprocessed_audio, preprocessed_video):
         """
         Args:
@@ -113,8 +121,8 @@ class TransformerModel(nn.Module):
         Returns:
             clean_audio: Tensor of shape (batch_size, clean_audio_length)
         """
-        preprocessed_audio = preprocessed_audio.to(self.device)
-        preprocessed_video = preprocessed_video.to(self.device)
+        preprocessed_audio = preprocessed_audio
+        preprocessed_video = preprocessed_video
 
         encoded_audio = self._encode_audio(preprocessed_audio)
         encoded_video = self._encode_video(preprocessed_video)

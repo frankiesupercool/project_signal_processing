@@ -59,15 +59,15 @@ class AudioVideoTransformer(pl.LightningModule):
         if not torch.isfinite(encoded_audio).all():
             logger.warning(f"NaNs or Infs found in encoded_audio at batch {batch_idx}. Skipping batch.")
             self.skipped_batches += 1
-            return torch.tensor(0.0, device=self.device, requires_grad=True)  # Dummy loss
+            return torch.tensor(0.0, requires_grad=True)  # Dummy loss
         if not torch.isfinite(encoded_video).all():
             logger.warning(f"NaNs or Infs found in encoded_video at batch {batch_idx}. Skipping batch.")
             self.skipped_batches += 1
-            return torch.tensor(0.0, device=self.device, requires_grad=True)  # Dummy loss
+            return torch.tensor(0.0, requires_grad=True)  # Dummy loss
         if not torch.isfinite(clean_speech).all():
             logger.warning(f"NaNs or Infs found in clean_speech at batch {batch_idx}. Skipping batch.")
             self.skipped_batches += 1
-            return torch.tensor(0.0, device=self.device, requires_grad=True)  # Dummy loss
+            return torch.tensor(0.0, requires_grad=True)  # Dummy loss
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)

@@ -1,17 +1,19 @@
 # config.py
 
 # data paths
-PRETRAIN_DATA_PATH = "../../../../data/LRS3/pretrain"       # Path to pretraining data
-TRAINVAL_DATA_PATH = "../../../../data/LRS3/trainval"       # Path to training-validation data
-TEST_DATA_PATH = "../../../../data/LRS3/test"               # Path to test data
+PRETRAIN_DATA_PATH = "../../../../data/datasets/LRS3/pretrain"       # Path to pretraining data
+TRAINVAL_DATA_PATH = "../../../../data/datasets/LRS3/trainval"       # Path to training-validation data
+TEST_DATA_PATH = "../../../../data/datasets/LRS3/test"               # Path to test data
 DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
 SEED = 42
-batch_size = 8
+batch_size = 16
 num_workers = 2
-fixed_length=16000
-fixed_frames=25
+
+# setting sample size to 0.4s - audio up sampled to 51.2kHz 0.4*51.2k=20480
+fixed_length = 20480
+fixed_frames=10
 
 # video encoding options
 densetcn_options = {
@@ -37,6 +39,12 @@ backbone_type = "resnet"
 snr_db = 10
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
+upsample_factor = 3.2
+upsampled_sample_rate = int(sample_rate * upsample_factor)
 
+# trainer
+gpus = [0, 1]
+max_epochs = 100
 
-#
+# root checkpoint save - public available checkpoints folder on sppc25
+root_checkpoint = "../../../data/datasets/checkpoints/sp2025"

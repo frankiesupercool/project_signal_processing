@@ -6,7 +6,6 @@ from denoiser import pretrained
 from denoiser.dsp import convert_audio
 from noise import Remix, RevEcho, BandMask, Shift
 from IPython import display as disp
-from utils.device_utils import get_device, set_seed
 
 """
 Preprocessing the audio using the encoder of the denoiser model in 

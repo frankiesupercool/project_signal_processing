@@ -19,6 +19,7 @@ class DataModule(pl.LightningDataModule):
             num_workers=config.num_workers,
             fixed_length=config.fixed_length,
             fixed_frames=config.fixed_frames,
+            upsampled_sample_rate=config.upsampled_sample_rate,
             seed=42,
     ):
         """
@@ -38,6 +39,7 @@ class DataModule(pl.LightningDataModule):
             fixed_length (int, optional): Fixed length in samples for audio waveforms. Defaults to 64000.
             fixed_frames (int, optional): Fixed number of frames for video sequences. Defaults to 100.
             train_val_split (tuple, optional): Ratios for train and validation splits from trainval. Defaults to (0.8, 0.2).
+            upsampled_sample_rate (int, optional): Up sample factor for audio sample. Default to 16000 (for no effect)
             seed (int, optional): Random seed for reproducibility. Defaults to 42.
         """
         super().__init__()
@@ -53,6 +55,7 @@ class DataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.fixed_length = fixed_length
         self.fixed_frames = fixed_frames
+        self.upsampled_sample_rate = upsampled_sample_rate
         self.seed = seed
 
 
@@ -84,6 +87,7 @@ class DataModule(pl.LightningDataModule):
             'sample_rate': self.sample_rate,
             'mode_prob': self.mode_prob,
             'fixed_length': self.fixed_length,
+            'upsampled_sample_rate': self.upsampled_sample_rate
         }
 
         if stage == 'fit' or stage is None:

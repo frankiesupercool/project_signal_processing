@@ -1,5 +1,7 @@
 import os
 import torch
+import torch.nn as nn
+from numpy.lib.function_base import extract
 from torch import Tensor
 
 from video_encoding.models.video_encoder_model import VideoEncoder
@@ -11,10 +13,7 @@ implementation from:
 https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
 """
 
-
-device = get_device()
-
-class VideoEncodingService:
+class VideoPreprocessingService(nn.Module):
 
     def __init__(self,
                  allow_size_mismatch: bool,
@@ -37,6 +36,7 @@ class VideoEncodingService:
             backbone_type (str):
             densetcn_options (dict):
         """
+        super(VideoPreprocessingService, self).__init__()
         self.allow_size_mismatch = allow_size_mismatch
         self.model_path = model_path
         self.use_boundary = use_boundary
@@ -47,7 +47,7 @@ class VideoEncodingService:
         self.feature_extraction_mode = True
 
         # Create the model
-        self.model = self.create_model(num_classes=self.num_classes,
+        self.create_model(num_classes=self.num_classes,
                           densetcn_options=self.densetcn_options,
                           backbone_type=self.backbone_type,
                           relu_type=self.relu_type,
@@ -59,8 +59,9 @@ class VideoEncodingService:
                                      allow_size_mismatch=self.allow_size_mismatch)
 
 
-    @staticmethod
-    def create_model(num_classes: int,
+
+    def create_model(self,
+                     num_classes: int,
                      densetcn_options: dict,
                      backbone_type: str = 'resnet',
                      relu_type: str = 'relu',
@@ -82,12 +83,12 @@ class VideoEncodingService:
                 VideoEncoder: Model instance.
         """
         # Initialise Model
-        return VideoEncoder(num_classes=num_classes,
+        self.model = VideoEncoder(num_classes=num_classes,
                            densetcn_options=densetcn_options,
                            backbone_type=backbone_type,
                            relu_type=relu_type,
                            use_boundary=use_boundary,
-                           extract_feats=extract_feats).to(device)
+                           extract_feats=extract_feats)
 
 
     def generate_encodings(self, data: Tensor) -> Tensor:
@@ -104,7 +105,7 @@ class VideoEncodingService:
     @staticmethod
     def load_model(load_path : str,
                    model : VideoEncoder,
-                   allow_size_mismatch=False) -> VideoEncoder:
+                   allow_size_mismatch=False, optimizer=None) -> VideoEncoder:
         """
             Load model from file
             If optimizer is passed, then the loaded dictionary is expected to contain also the states of the optimizer.
@@ -119,7 +120,7 @@ class VideoEncodingService:
 
         # -- load dictionary
         assert os.path.isfile(load_path), "Error when loading the model, provided path not found: {}".format(load_path)
-        checkpoint = torch.load(load_path, map_location=device, weights_only=True)
+        checkpoint = torch.load(load_path, weights_only=True)
         loaded_state_dict = checkpoint['model_state_dict']
 
         if allow_size_mismatch:
@@ -135,6 +136,9 @@ class VideoEncodingService:
 
         # -- copy loaded state into current model and, optionally, optimizer
         model.load_state_dict(loaded_state_dict, strict=not allow_size_mismatch)
+        if optimizer is not None:
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            return model, optimizer, checkpoint['epoch_idx'], checkpoint
         return model
 
     @staticmethod
@@ -160,7 +164,7 @@ class VideoEncodingService:
         # Add channel dimension at position 1: [batch_size, 1, frames, 96, 96]
         input_tensor = input_tensor.unsqueeze(1)
 
-        input_tensor = input_tensor.to(device)
+        input_tensor = input_tensor
 
         # Assuming all samples have the same number of frames
         lengths = [data.shape[1]] * data.shape[0]  # [frames, frames, ..., frames]
