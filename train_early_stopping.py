@@ -41,7 +41,6 @@ def train():
         num_workers=config.num_workers,
         fixed_length=config.fixed_length,
         fixed_frames=config.fixed_frames,
-        seed=config.SEED,
     )
     data_module.setup()
 

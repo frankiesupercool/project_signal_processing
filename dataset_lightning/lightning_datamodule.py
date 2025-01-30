@@ -19,8 +19,7 @@ class DataModule(pl.LightningDataModule):
             num_workers=config.num_workers,
             fixed_length=config.fixed_length,
             fixed_frames=config.fixed_frames,
-            upsampled_sample_rate=config.upsampled_sample_rate,
-            seed=42,
+            upsampled_sample_rate=config.upsampled_sample_rate
     ):
         """
         PyTorch Lightning DataModule for PreprocessingDataset.
@@ -56,22 +55,11 @@ class DataModule(pl.LightningDataModule):
         self.fixed_length = fixed_length
         self.fixed_frames = fixed_frames
         self.upsampled_sample_rate = upsampled_sample_rate
-        self.seed = seed
-
 
         # Placeholders for x_datasets
         self.pretrain_dataset = None
         self.trainval_dataset = None
         self.test_dataset = None
-
-    def prepare_data(self):
-        """
-        Download or prepare data if necessary.
-        This method is called only from a single GPU.
-        """
-        # Since the dataset handles its own preparation (paired_files.txt),
-        # no action is required here unless additional steps are needed.
-        pass
 
     def setup(self, stage=None):
         """
@@ -118,7 +106,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             pin_memory=False,
-            persistent_workers=True
+            persistent_workers=True,
         )
 
     def val_dataloader(self):
