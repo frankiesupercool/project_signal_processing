@@ -39,6 +39,8 @@ backbone_type = "resnet"
 snr_db = 10
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
+upsample_factor = 3.2
+upsampled_sample_rate = int(sample_rate * upsample_factor)
 
 # trainer
 gpus = [0, 1]

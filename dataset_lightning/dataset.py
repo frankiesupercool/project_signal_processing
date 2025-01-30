@@ -11,7 +11,7 @@ from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimpl
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000):
+                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000):
 
         # todo fixed_frames ?
         """
@@ -32,6 +32,7 @@ class PreprocessingDataset(Dataset):
         self.sample_rate = sample_rate
         self.mode_prob = mode_prob
         self.fixed_length = fixed_length  # Fixed length for audio samples
+        self.upsampled_sample_rate = upsampled_sample_rate
 
 
 
@@ -242,9 +243,20 @@ class PreprocessingDataset(Dataset):
     def _preprocess_audio(self, lrs3_file):
         # Load clean speech from LRS3
         speech_waveform, orig_sample_rate = torchaudio.load(lrs3_file)
+
+        # check if waveform is multichannel; shape: [channels, time])
+        if speech_waveform.shape[0] > 1:
+            speech_waveform = speech_waveform.mean(dim=0, keepdim=True)
+
         speech_waveform = torchaudio.functional.resample(speech_waveform, orig_freq=orig_sample_rate,
                                                          new_freq=self.sample_rate)
-        speech_waveform = speech_waveform.squeeze(0)  # Assuming mono; adjust if stereo
+
+        # upsample by 3.2x for the network (16 kHz → 51.2 kHz)
+        speech_waveform = torchaudio.functional.resample(
+            speech_waveform,
+            orig_freq=self.sample_rate,
+            new_freq=self.upsampled_sample_rate
+        )
 
         # Pad or truncate speech waveform to fixed length
         speech_waveform = self.pad_or_truncate(speech_waveform, self.fixed_length)

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torchaudio.functional
 
 import config
 from config import batch_size
@@ -45,6 +46,9 @@ class TransformerModel(nn.Module):
 
         self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
         self.video_proj = nn.Linear(video_dim, embed_dim)
+
+        self.upsampled_sample_rate = config.upsampled_sample_rate
+        self.target_rate = config.sample_rate
 
         self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=True)
 
@@ -93,6 +97,13 @@ class TransformerModel(nn.Module):
         if decoded_audio.size(1) == 1 and decoded_audio.size(2) != config.fixed_length:
             decoded_audio = decoded_audio.squeeze(1)
             decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
+
+        # down sample
+        decoded_audio = torchaudio.functional.resample(
+            decoded_audio,
+            orig_freq=self.upsampled_sample_rate,
+            new_freq=self.target_rate
+        )
 
         return decoded_audio
 
