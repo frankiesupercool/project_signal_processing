@@ -6,7 +6,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-
 class AudioVideoTransformer(pl.LightningModule):
     def __init__(self, model, learning_rate=1e-5):
         super(AudioVideoTransformer, self).__init__()
@@ -193,4 +192,5 @@ class AudioVideoTransformer(pl.LightningModule):
             logger.warning(f"Total skipped test batches this epoch: {self.skipped_batches}")
             # Reset the counter for the next epoch
             self.skipped_batches = 0
+
 

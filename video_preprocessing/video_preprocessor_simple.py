@@ -6,7 +6,9 @@ class VideoPreprocessorSimple:
 
     def __init__(self, target_frames=100, fps=25.0):
         """
-        Initializes the video preprocessor.
+        Initializes simple Video Preprocessor. Bot cropping and grey scaling is done. For cropping no landmark
+        detection is done. The videos are only cropped to a fixed central 96x96 frame. This is done as most mouths are
+        in the middle of the datasets videos.
 
         Args:
             target_frames (int): Number of frames corresponding to the fixed audio duration.

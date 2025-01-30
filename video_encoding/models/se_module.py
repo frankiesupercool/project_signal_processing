@@ -3,6 +3,11 @@ import torch.nn as nn
 
 from video_encoding.models.swish import Swish
 
+"""Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With
+implementation from:
+
+https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
+"""
 
 def _average_batch( x, lengths):
     return torch.stack( [torch.mean( x[index][:,0:i], 1 ) for index, i in enumerate(lengths)],0 )
