@@ -3,17 +3,13 @@ import random
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from denoiser import pretrained
 import linecache  # Import linecache for reading specific lines from files
-from video_encoding.video_encoder_service import VideoPreprocessingService
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
-
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
                  mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000):
 
-        # todo fixed_frames ?
         """
         Args:
             lrs3_root (str): Path to the LRS3 dataset root directory.
@@ -301,18 +297,15 @@ class PreprocessingDataset(Dataset):
             raise IndexError(f"No paired files found at index {idx}")
 
         audio_lrs3_file, video_lrs3_file = paired_line.split('\t')
-        # print(f"Processing Audio: {audio_lrs3_file} | Video: {video_lrs3_file}")
-
 
         preprocessed_video = self._preprocess_video(video_lrs3_file)
         preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
 
-
         sample = {
             'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
             'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
-            'clean_speech': speech_waveform,  # Shape: [1, samples]
+            'clean_speech': speech_waveform,  # shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file
         }
