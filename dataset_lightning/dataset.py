@@ -191,9 +191,21 @@ class PreprocessingDataset(Dataset):
             # Select a random file from the interfering speaker
             interfering_file = self._get_random_file_from_speaker(interfering_speaker_id)
             interfering_waveform, orig_sample_rate = torchaudio.load(interfering_file)
+
+            # check if waveform is multichannel; shape: [channels, time])
+            if interfering_waveform.shape[0] > 1:
+                interfering_waveform = interfering_waveform.mean(dim=0, keepdim=True)
+
+            # resample
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
                                                                   new_freq=self.sample_rate)
-            interfering_waveform = interfering_waveform.squeeze(0)  # Assuming mono; adjust if stereo
+
+            # up sample by 3.2x for the network (16 kHz → 51.2 kHz)
+            interfering_waveform = torchaudio.functional.resample(
+                interfering_waveform,
+                orig_freq=self.sample_rate,
+                new_freq=self.upsampled_sample_rate
+            )
 
             # Pad or truncate interfering waveform to fixed length
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
@@ -220,16 +232,22 @@ class PreprocessingDataset(Dataset):
             if retries > max_retries:
                 raise ValueError(f"All retries failed: Unable to find valid DNS file after {max_retries + 1} attempts.")
 
-            # Resample to match the target sample rate
+            # check if waveform is multichannel; shape: [channels, time])
+            if interfering_waveform.shape[0] > 1:
+                interfering_waveform = interfering_waveform.mean(dim=0, keepdim=True)
 
+            # resample
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
-
                                                                   new_freq=self.sample_rate)
 
-            interfering_waveform = interfering_waveform.squeeze(0)  # Assuming mono; adjust if stereo
+            # up sample by 3.2x for the network (16 kHz → 51.2 kHz)
+            interfering_waveform = torchaudio.functional.resample(
+                interfering_waveform,
+                orig_freq=self.sample_rate,
+                new_freq=self.upsampled_sample_rate
+            )
 
             # Pad or truncate interfering waveform to fixed length
-
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
 
             interference_type = 'noise'
