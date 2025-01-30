@@ -37,12 +37,12 @@ class PositionalEncoder(nn.Module):
         _, seq_len, embed_dim = inputs.size()
         assert embed_dim == self.num_units, "num_units must match the embedding dimension of inputs."
 
-        position = torch.arange(seq_len, dtype=torch.float32, device=inputs.device).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, self.num_units, 2, dtype=torch.float32, device=inputs.device) *
+        position = torch.arange(seq_len, dtype=torch.float32).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, self.num_units, 2, dtype=torch.float32) *
                              -(np.log(10000.0) / self.num_units))
 
         # Compute positional encoding
-        pe = torch.zeros(seq_len, self.num_units, device=inputs.device)
+        pe = torch.zeros(seq_len, self.num_units)
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
 

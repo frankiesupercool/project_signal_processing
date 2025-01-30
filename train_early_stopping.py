@@ -2,8 +2,7 @@ import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 import os
-
-# Your custom modules
+from denoiser import pretrained
 from dataset_lightning.lightning_datamodule import DataModule
 from transformer.AV_transformer import AudioVideoTransformer
 from transformer.transformer_model import TransformerModel
@@ -19,6 +18,9 @@ def train():
     trainval_root = config.TRAINVAL_DATA_PATH  # Path for training-validation data
     test_root = config.TEST_DATA_PATH  # Path for testing data
     dns_root = config.DNS_DATA_PATH  # Path for DNS noise data
+
+    audio_model = pretrained.dns64()
+    denoiser_decoder = audio_model.decoder
 
     # Verify that directories exist
     for path in [pretrain_root, trainval_root, test_root, dns_root]:
@@ -59,7 +61,7 @@ def train():
         num_layers=3,           # example
         dim_feedforward=532,    # example
         max_seq_length=1024,    # adjust if needed
-        denoiser_decoder=None   # or your denoiser
+        denoiser_decoder=denoiser_decoder   # or your denoiser
     )
 
     # 3) Create your LightningModule with the model
@@ -74,7 +76,7 @@ def train():
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',        # name of the monitored metric
-        dirpath='checkpoints',     # directory to save checkpoints
+        dirpath=config.root_checkpoint,     # directory to save checkpoints
         filename='best-checkpoint',
         save_top_k=1,              # only save the best model
         mode='min'                 # we want to minimize val_loss
@@ -82,11 +84,13 @@ def train():
 
     # 5) Setup trainer
     trainer = pl.Trainer(
-        max_epochs=10,             # set to a higher number; early stopping may stop earlier
+        max_epochs=config.max_epochs,
+        strategy='ddp_find_unused_parameters_true',# set to a higher number; early stopping may stop earlier
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=1,
+        devices= config.gpus,
+        #precision = '16-mixed',
         callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=1
+        log_every_n_steps=100
     )
 
     # 6) Train the model

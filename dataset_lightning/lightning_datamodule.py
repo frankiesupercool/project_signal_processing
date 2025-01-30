@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
 from dataset_lightning.dataset import PreprocessingDataset  # Ensure correct import path
+import config
 
 
 class DataModule(pl.LightningDataModule):
@@ -10,14 +11,14 @@ class DataModule(pl.LightningDataModule):
             trainval_root,
             test_root,
             dns_root,
-            snr_db=0,
+            snr_db=config.snr_db,
             transform=None,
             sample_rate=16000,
             mode_prob={'speaker': 0.5, 'noise': 0.5},
-            batch_size=64,
-            num_workers=8,
-            fixed_length=64000,
-            fixed_frames=100,
+            batch_size=config.batch_size,
+            num_workers=config.num_workers,
+            fixed_length=config.fixed_length,
+            fixed_frames=config.fixed_frames,
             seed=42,
     ):
         """
@@ -112,7 +113,7 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
-            pin_memory=True,
+            pin_memory=False,
             persistent_workers=True
         )
 
@@ -122,7 +123,7 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True,
+            pin_memory=False,
             persistent_workers=True
         )
 
@@ -132,6 +133,6 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True,
+            pin_memory=False,
             persistent_workers=True
         )
