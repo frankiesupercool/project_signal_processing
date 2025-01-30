@@ -1,7 +1,10 @@
 import numpy as np
 import torch
-from torchmetrics.audio import PerceptualEvaluationSpeechQuality, ShortTimeObjectiveIntelligibility, \
-    SignalDistortionRatio
+from pystoi import stoi
+import mir_eval
+from pesq import pesq
+from pesq import PesqError
+import numpy as np
 
 from dataset_lightning.lightning_datamodule import DataModule
 from utils.device_utils import get_device
@@ -15,10 +18,6 @@ def evaluate(model, data_module: DataModule):
     pesq_scores = []
     stoi_scores = []
     sdr_scores = []
-
-    pesq = PerceptualEvaluationSpeechQuality(16000, 'wb')
-    stoi = ShortTimeObjectiveIntelligibility(16000, False)
-    sdr = SignalDistortionRatio()
 
     model.eval()
 
@@ -42,18 +41,19 @@ def evaluate(model, data_module: DataModule):
                 denoised_sample = denoised_sample[:min_len]
                 # PESQ
                 try:
-                    pesq_score = pesq(clean_sample, denoised_sample)
+                    pesq_score = pesq(16000, clean_sample, denoised_sample, 'wb')
                     pesq_scores.append(pesq_score)
-                except Exception as e:
+                except PesqError as e:
                     print(f"PESQ evaluation error: {e}")
                     pesq_scores.append(None)
 
                 # STOI
-                stoi_score = stoi(clean_sample, denoised_sample)
+                stoi_score = stoi(clean_sample, denoised_sample, 16000, extended=False)
                 stoi_scores.append(stoi_score)
 
                 # SDR
-                sdr_score = sdr(clean_sample, denoised_sample)
+                sdr_score = mir_eval.separation.bss_eval_sources(np.expand_dims(clean_sample, axis=0),
+                                                                 np.expand_dims(denoised_sample, axis=0))[0][0]
                 sdr_scores.append(sdr_score)
 
                 # Filter None values from PESQ results

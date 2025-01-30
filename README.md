@@ -24,6 +24,7 @@ To setup this environment follow the following steps:
 9. `conda install opencv`
 10. `conda install conda-forge::pytorch-lightning`
 11. `pip install omegaconf==2.3.0`
+12. `pip install pesq mir_eval pystoi`
 
 Pip shows error regarding omegaconf version but it works.
 
