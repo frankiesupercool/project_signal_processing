@@ -100,7 +100,7 @@ class VideoPreprocessingService(nn.Module):
                 Tensor: Encoded video features.
         """
         encoded = self.extract_feats(self.model, data)
-        return encoded.to(device)
+        return encoded
 
     @staticmethod
     def load_model(load_path : str,

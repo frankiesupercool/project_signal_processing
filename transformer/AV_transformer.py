@@ -6,23 +6,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-
-
-
-def get_tensor_size(tensor):
-    return tensor.element_size() * tensor.nelement()
-
-
-def get_batch_memory_usage(batch):
-    if isinstance(batch, (list, tuple)):
-        return sum(get_batch_memory_usage(b) for b in batch)
-    elif isinstance(batch, torch.Tensor):
-        return get_tensor_size(batch)
-    else:
-        # If the batch contains other kinds of elements, handle them here if needed
-        return 0
-
-
 class AudioVideoTransformer(pl.LightningModule):
     def __init__(self, model, learning_rate=1e-5):
         super(AudioVideoTransformer, self).__init__()
