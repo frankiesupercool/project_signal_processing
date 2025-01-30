@@ -11,8 +11,8 @@ SEED = 42
 batch_size = 16
 num_workers = 2
 
-# setting sample size to 0.4s
-fixed_length = 6400
+# setting sample size to 0.4s - audio up sampled to 51.2kHz 0.4*51.2k=20480
+fixed_length = 20480
 fixed_frames=10
 
 # video encoding options
