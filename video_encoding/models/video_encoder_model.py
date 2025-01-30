@@ -116,7 +116,7 @@ class VideoEncoder(nn.Module):
             x = torch.cat([x, boundaries], dim=-1)
         # For encoding self.extract_feats needs to be True. This causes the model to not run the tcn but output the
         # encodings.
-        return x if self.extract_feats else self.tcn(x, lengths, B)
+        return x
 
     @staticmethod
     # -- auxiliary functions
