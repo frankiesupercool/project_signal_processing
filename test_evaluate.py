@@ -71,5 +71,5 @@ def test_evaluation():
     print(f"For the test dataset the average sdr is: {avg_sdr}")
 
 
-if __name__ == "_main_":
+if __name__ == "__main__":
     test_evaluation()
