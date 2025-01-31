@@ -85,7 +85,6 @@ def test_trainer():
         num_workers=config.num_workers,
         fixed_length=config.fixed_length,
         fixed_frames=config.fixed_frames,
-        seed=config.SEED,
     )
 
     # Prepare the DataModule (this will set up datasets)

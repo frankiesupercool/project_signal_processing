@@ -7,7 +7,6 @@ TEST_DATA_PATH = "../../../../data/datasets/LRS3/test"               # Path to t
 DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
-SEED = 42
 batch_size = 16
 num_workers = 2
 

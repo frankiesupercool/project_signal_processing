@@ -37,8 +37,7 @@ def test():
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         fixed_length=config.fixed_length,
-        fixed_frames=config.fixed_frames,
-        seed=config.SEED,
+        fixed_frames=config.fixed_frames
     )
     # setup for test
     data_module.setup(stage="test")
