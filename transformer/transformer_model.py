@@ -59,7 +59,7 @@ class TransformerModel(nn.Module):
         # projection layer
         self.proj_to_decoder = nn.Linear(embed_dim, 1024)
         # TODO change in features so it is a variable
-        self.final_projection = nn.Linear(122196, config.fixed_length)
+        self.final_projection = nn.Linear(1024, config.fixed_length)
 
         # Integration of the denoiser's decoder
         if denoiser_decoder is not None:
@@ -92,11 +92,16 @@ class TransformerModel(nn.Module):
         for i , layer in enumerate(self.denoiser_decoder):
             decoded_audio = layer(decoded_audio)
 
+            # If the decoder output has a single channel but the temporal dimension is not what we expect,
+            # use adaptive pooling to reduce the time dimension first.
         if decoded_audio.size(1) == 1 and decoded_audio.size(2) != config.fixed_length:
-            decoded_audio = decoded_audio.squeeze(1)
-            decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
-
-        # down sample
+            # decoded_audio shape: [batch, 1, seq_len] where seq_len is large (e.g., ~122196)
+            # Apply adaptive average pooling to reduce the time dimension to a fixed intermediate size (e.g. 1024)
+            pooled = nn.functional.adaptive_avg_pool1d(decoded_audio, output_size=1024)  # Shape: [batch, 1, 1024]
+            pooled = pooled.squeeze(1)  # Now shape: [batch, 1024]
+            # Use a small linear projection to map to config.fixed_length
+            decoded_audio = self.final_projection(pooled)  # Shape: [batch, config.fixed_length]
+            # Downsample if necessary (this part remains unchanged)
         decoded_audio = torchaudio.functional.resample(
             decoded_audio,
             orig_freq=self.upsampled_sample_rate,
