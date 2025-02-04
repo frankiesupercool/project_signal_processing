@@ -283,8 +283,6 @@ class PreprocessingDataset(Dataset):
         # Mix speech and interference at desired SNR
         mixture = self.add_noise_with_snr(speech_waveform, interfering_waveform, self.snr_db)
 
-        # Add channel and batch dimensions before encoding
-        mixture = mixture.unsqueeze(0)  # Shape: [1, 1, samples]
 
         return mixture, speech_waveform, interfering_waveform, interference_type
 
