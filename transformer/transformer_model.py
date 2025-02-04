@@ -96,13 +96,14 @@ class TransformerModel(nn.Module):
             decoded_audio = decoded_audio.squeeze(1)
             decoded_audio = self.final_projection(decoded_audio)  # Shape: [batch_size, 64000]
 
+        print("Before resample:", decoded_audio.shape)
         # down sample
         decoded_audio = torchaudio.functional.resample(
             decoded_audio,
             orig_freq=self.upsampled_sample_rate,
             new_freq=self.target_rate
         )
-
+        print("After resample:", decoded_audio.shape)
         return decoded_audio
 
 
