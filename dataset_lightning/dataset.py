@@ -108,21 +108,22 @@ class PreprocessingDataset(Dataset):
 
     def pad_or_truncate(self, waveform, length):
         """
-        Pads or truncates the waveform to a fixed length.
+        Pads or truncates the waveform to a fixed length along the time dimension.
 
         Args:
-            waveform (torch.Tensor): Audio waveform tensor.
+            waveform (torch.Tensor): Audio waveform tensor of shape [channels, time].
             length (int): Desired length in samples.
 
         Returns:
             torch.Tensor: Waveform tensor padded or truncated to the specified length.
         """
-        if waveform.shape[0] > length:
-            # Truncate the waveform
-            waveform = waveform[:length]
-        elif waveform.shape[0] < length:
-            # Pad the waveform with zeros at the end
-            padding = length - waveform.shape[0]
+        num_samples = waveform.shape[1]
+        if num_samples > length:
+            # Truncate the waveform along the time dimension
+            waveform = waveform[:, :length]
+        elif num_samples < length:
+            # Pad the waveform with zeros at the end along the time dimension
+            padding = length - num_samples
             waveform = torch.nn.functional.pad(waveform, (0, padding))
         return waveform
 
