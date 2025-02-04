@@ -301,10 +301,16 @@ class PreprocessingDataset(Dataset):
         preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
 
+        clean_speech = torchaudio.functional.resample(
+            speech_waveform.squeeze(1),  # if clean_speech has a singleton channel dimension
+            orig_freq=self.upsampled_sample_rate,  # 51200 Hz
+            new_freq=self.sample_rate  # 16000 Hz
+        )
+
         sample = {
             'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
             'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
-            'clean_speech': speech_waveform,  # shape: [1, samples]
+            'clean_speech': clean_speech,  # shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file
         }
