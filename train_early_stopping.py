@@ -84,7 +84,7 @@ def train():
     # 5) Setup trainer
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
-        strategy='ddp_find_unused_parameters_true',# set to a higher number; early stopping may stop earlier
+        strategy='ddp',
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
         devices= config.gpus,
         precision = '16-mixed',
