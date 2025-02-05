@@ -46,4 +46,4 @@ gpus = [0]
 max_epochs = 100
 
 # root checkpoint save - public available checkpoints folder on sppc25
-root_checkpoint = "../../../data/datasets/checkpoints/sp2025"
+root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
