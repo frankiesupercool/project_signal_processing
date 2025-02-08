@@ -108,21 +108,22 @@ class PreprocessingDataset(Dataset):
 
     def pad_or_truncate(self, waveform, length):
         """
-        Pads or truncates the waveform to a fixed length.
+        Pads or truncates the waveform to a fixed length along the time dimension.
 
         Args:
-            waveform (torch.Tensor): Audio waveform tensor.
+            waveform (torch.Tensor): Audio waveform tensor of shape [channels, time].
             length (int): Desired length in samples.
 
         Returns:
             torch.Tensor: Waveform tensor padded or truncated to the specified length.
         """
-        if waveform.shape[0] > length:
-            # Truncate the waveform
-            waveform = waveform[:length]
-        elif waveform.shape[0] < length:
-            # Pad the waveform with zeros at the end
-            padding = length - waveform.shape[0]
+        num_samples = waveform.shape[1]
+        if num_samples > length:
+            # Truncate the waveform along the time dimension
+            waveform = waveform[:, :length]
+        elif num_samples < length:
+            # Pad the waveform with zeros at the end along the time dimension
+            padding = length - num_samples
             waveform = torch.nn.functional.pad(waveform, (0, padding))
         return waveform
 
@@ -282,8 +283,6 @@ class PreprocessingDataset(Dataset):
         # Mix speech and interference at desired SNR
         mixture = self.add_noise_with_snr(speech_waveform, interfering_waveform, self.snr_db)
 
-        # Add channel and batch dimensions before encoding
-        mixture = mixture.unsqueeze(0)  # Shape: [1, 1, samples]
 
         return mixture, speech_waveform, interfering_waveform, interference_type
 
@@ -302,10 +301,16 @@ class PreprocessingDataset(Dataset):
         preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
 
+        clean_speech = torchaudio.functional.resample(
+            speech_waveform.squeeze(1),  # if clean_speech has a singleton channel dimension
+            orig_freq=self.upsampled_sample_rate,  # 51200 Hz
+            new_freq=self.sample_rate  # 16000 Hz
+        )
+
         sample = {
             'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
             'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
-            'clean_speech': speech_waveform,  # shape: [1, samples]
+            'clean_speech': clean_speech,  # shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file
         }

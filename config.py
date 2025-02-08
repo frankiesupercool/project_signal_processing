@@ -11,8 +11,8 @@ batch_size = 16
 num_workers = 2
 
 # setting sample size to 0.4s - audio up sampled to 51.2kHz 0.4*51.2k=20480
-fixed_length = 20480
-fixed_frames=10
+fixed_length = 51200
+fixed_frames=25
 
 # video encoding options
 densetcn_options = {
@@ -42,8 +42,8 @@ upsample_factor = 3.2
 upsampled_sample_rate = int(sample_rate * upsample_factor)
 
 # trainer
-gpus = [0, 1]
+gpus = [0]
 max_epochs = 100
 
 # root checkpoint save - public available checkpoints folder on sppc25
-root_checkpoint = "../../../data/datasets/checkpoints/sp2025"
+root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
