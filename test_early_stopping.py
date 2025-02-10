@@ -100,5 +100,8 @@ def test():
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    print(torch.cuda.device_count())  # Should print 1 (if CUDA_VISIBLE_DEVICES is set)
+    print(torch.cuda.current_device())  # Should be 0 (but it maps to actual GPU 1)
+    print(torch.cuda.get_device_name(0))  # Should show GPU 1's name
     test()
