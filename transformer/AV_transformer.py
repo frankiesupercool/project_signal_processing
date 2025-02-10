@@ -11,7 +11,7 @@ class AudioVideoTransformer(pl.LightningModule):
         super(AudioVideoTransformer, self).__init__()
         self.model = model
         self.learning_rate = learning_rate
-        self.criterion = nn.MSELoss()  # Using Mean Squared Error loss
+        self.criterion = nn.L1Loss()  # L1Loss provides more variance in output than MSE
 
         # Initialize a counter for skipped batches
         self.skipped_batches = 0
