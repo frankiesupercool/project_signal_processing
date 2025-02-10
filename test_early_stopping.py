@@ -13,6 +13,8 @@ def test():
     Script to test the AudioVideoTransformer using the best checkpoint
     """
 
+    print("Start testing setup")
+
     pretrain_root = config.PRETRAIN_DATA_PATH
     trainval_root = config.TRAINVAL_DATA_PATH
     test_root = config.TEST_DATA_PATH
@@ -42,6 +44,8 @@ def test():
     # setup for test
     data_module.setup(stage="test")
 
+    print("Data module setup done")
+
     # init transformer - must match as in train!
     transformer_model_instance = TransformerModel(
         audio_dim=1024,
@@ -61,6 +65,8 @@ def test():
         denoiser_decoder=denoiser_decoder
     )
 
+    print("Transformer init done")
+
     # load best checkpoint
     best_checkpoint_path = config.root_checkpoint + "/best-checkpoint.ckpt"
 
@@ -75,12 +81,16 @@ def test():
         learning_rate=1e-5  # check which lr was used
     )
 
+    print("Checkpoint loaded to model - done")
+
     # setup trainer
     trainer = pl.Trainer(
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
         devices=1,
         log_every_n_steps=1
     )
+    print("Trainer setup done")
+    print("Start testing")
 
     # test loop
     test_results = trainer.test(model=model, datamodule=data_module)
