@@ -68,7 +68,7 @@ def test():
     print("Transformer init done")
 
     # load best checkpoint
-    best_checkpoint_path = config.root_checkpoint + "/best-checkpoint.ckpt"
+    best_checkpoint_path = config.root_checkpoint + "best-checkpoint.ckpt"
 
     # model = AudioVideoTransformer.load_from_checkpoint(
     #     checkpoint_path=best_checkpoint_path
