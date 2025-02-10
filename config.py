@@ -42,7 +42,7 @@ upsample_factor = 3.2
 upsampled_sample_rate = int(sample_rate * upsample_factor)
 
 # trainer
-gpus = [0]
+gpus = [1]
 max_epochs = 100
 
 # root checkpoint save - public available checkpoints folder on sppc25
