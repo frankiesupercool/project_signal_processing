@@ -99,5 +99,5 @@ def test():
     print(f"Test Results: {test_results}")
 
 
-if __name__ == "_main_":
+if __name__ == "__main__":
     test()
