@@ -76,17 +76,18 @@ def train():
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',        # name of the monitored metric
         dirpath=config.root_checkpoint,     # directory to save checkpoints
-        filename='best-checkpoint',
-        save_top_k=1,              # only save the best model
-        mode='min'                 # we want to minimize val_loss
+        save_top_k=-1,              # only save the best model
+        mode='min',                 # we want to minimize val_loss
+        filename='checkpoint_{epoch:02d}-{acc:02.0f}',
+        auto_insert_metric_name=True
     )
 
     # 5) Setup trainer
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices= config.gpus,
-        precision = '16-mixed',
+        devices=1 if not torch.cuda.is_available() else config.gpus,
+        # precision = '16-mixed',
         callbacks=[early_stopping_callback, checkpoint_callback],
         log_every_n_steps=100
     )

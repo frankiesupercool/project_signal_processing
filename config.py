@@ -1,10 +1,11 @@
 # config.py
 
 # data paths
-PRETRAIN_DATA_PATH = "../../../../data/datasets/LRS3/pretrain"       # Path to pretraining data
-TRAINVAL_DATA_PATH = "../../../../data/datasets/LRS3/trainval"       # Path to training-validation data
-TEST_DATA_PATH = "../../../../data/datasets/LRS3/test"               # Path to test data
-DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/noise_fullband" # Path to DNS noise data
+sample_root="../tiny_sample_data/data/"
+PRETRAIN_DATA_PATH = sample_root + "LRS3/pretrain"       # Path to pretraining data
+TRAINVAL_DATA_PATH = sample_root + "LRS3/trainval"       # Path to training-validation data
+TEST_DATA_PATH = sample_root + "LRS3/test_test"               # Path to test data
+DNS_DATA_PATH = "../sample_data/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
 batch_size = 16
@@ -35,7 +36,7 @@ backbone_type = "resnet"
 
 
 # audio model and processing configurations
-snr_db = 10
+snr_db = 40
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
 upsample_factor = 3.2
@@ -46,4 +47,5 @@ gpus = [1]
 max_epochs = 100
 
 # root checkpoint save - public available checkpoints folder on sppc25
-root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
+#root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
+root_checkpoint = "../../.."

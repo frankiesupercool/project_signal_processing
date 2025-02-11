@@ -25,6 +25,11 @@ class AudioVideoTransformer(pl.LightningModule):
         Returns:
           - predicted_clean: shape [batch_size, 64000] (example)
         """
+
+        print("Encoded audio shape (forward):", encoded_audio.shape, "dtype:", encoded_audio.dtype)
+        print("Encoded video shape (forward):", encoded_video.shape, "dtype:", encoded_video.dtype)
+        print("Encoded video min/max (forward):", encoded_video.min(), encoded_video.max())
+
         return self.model(encoded_audio, encoded_video)
 
     def training_step(self, batch, batch_idx):
@@ -37,6 +42,10 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
+
+        print("Training batch - encoded audio shape:", encoded_audio.shape, "dtype:", encoded_audio.dtype)
+        print("Training batch - encoded video shape:", encoded_video.shape, "dtype:", encoded_video.dtype)
+        print("Training batch - clean speech shape:", clean_speech.shape, "dtype:", clean_speech.dtype)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
@@ -54,6 +63,10 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
+
+        print("Training batch - predicted clean shape:", predicted_clean.shape, "dtype:", predicted_clean.dtype)
+        print("Training batch - predicted clean min/max:", predicted_clean.min(), predicted_clean.max())
+
         loss = self.criterion(predicted_clean, clean_speech)
 
         # Determine batch size

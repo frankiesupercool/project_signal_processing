@@ -126,8 +126,22 @@ class TransformerModel(nn.Module):
         preprocessed_audio = preprocessed_audio
         preprocessed_video = preprocessed_video
 
+        print("Preprocessed audio shape (TransformerModel):", preprocessed_audio.shape, "dtype:",
+              preprocessed_audio.dtype)
+        print("Preprocessed video shape (TransformerModel):", preprocessed_video.shape, "dtype:",
+              preprocessed_video.dtype)
+        print("Preprocessed video min/max (TransformerModel):", preprocessed_video.min(), preprocessed_video.max())
+
         encoded_audio = self._encode_audio(preprocessed_audio)
         encoded_video = self._encode_video(preprocessed_video)
+
+        if encoded_video.dim() == 2:
+            encoded_video = encoded_video.unsqueeze(0)
+
+        print("Encoded audio shape (TransformerModel):", encoded_audio.shape, "dtype:", encoded_audio.dtype)
+        print("Encoded video shape (TransformerModel):", encoded_video.shape, "dtype:", encoded_video.dtype)
+        print("Encoded video min/max (TransformerModel):", encoded_video.min(), encoded_video.max())
+
 
         if encoded_video.dim() == 4 and encoded_video.size(1) == 1:
             encoded_video = encoded_video.squeeze(1)  # (batch_size, video_seq_len, video_dim)
@@ -137,6 +151,12 @@ class TransformerModel(nn.Module):
         # use projection for same dimension, otherwise adding data + positional + modality_enc would not work
         audio_proj = self.audio_proj(encoded_audio)  # (batch_size, audio_seq_len, embed_dim)
         video_proj = self.video_proj(encoded_video)  # (batch_size, video_seq_len, embed_dim)
+
+        print("Projected audio shape (TransformerModel):", audio_proj.shape, "dtype:", audio_proj.dtype)
+        print("Projected video shape (TransformerModel):", video_proj.shape, "dtype:", video_proj.dtype)
+        print("Projected video min/max (TransformerModel):", video_proj.min(), video_proj.max())
+
+
         # sinusoidal positional encoding
         positional_audio_encoding = self.positional_encoder(audio_proj)
         positional_video_encoding = self.positional_encoder(video_proj)
@@ -151,12 +171,24 @@ class TransformerModel(nn.Module):
         combined = torch.cat([audio_input, video_input], dim=1)
         # Transformer expects input as (seq_len, batch_size, embed_dim)
         transformer_input = combined.transpose(0, 1)  # (total_seq_len, batch_size, embed_dim)
+
+        print("Transformer input shape (TransformerModel):", transformer_input.shape, "dtype:", transformer_input.dtype)
+        print("Transformer input min/max (TransformerModel):", transformer_input.min(), transformer_input.max())
+
         transformer_output = self.transformer_encoder(transformer_input)  # (total_seq_len, batch_size, embed_dim)
         transformer_output = transformer_output.transpose(0, 1)  # (batch_size, total_seq_len, embed_dim)
+
+        print("Transformer output shape (TransformerModel):", transformer_output.shape, "dtype:",
+              transformer_output.dtype)
+        print("Transformer output min/max (TransformerModel):", transformer_output.min(), transformer_output.max())
 
         #aggregated_output = torch.mean(transformer_output, dim=1)  # (batch_size, embed_dim)
         # Decode to clean audio
         clean_audio = self._decode_audio(transformer_output) # (batch_size, total_seq_len, 64000)
+
+        print("Decoded audio shape (TransformerModel):", clean_audio.shape, "dtype:", clean_audio.dtype)
+        print("Decoded audio min/max (TransformerModel):", clean_audio.min(), clean_audio.max())
+
         # Check for NaNs or Infs in output
         if not torch.isfinite(clean_audio).all():
             raise ValueError("Model output contains NaNs or Infs")

@@ -8,7 +8,6 @@ from transformer.transformer_model import TransformerModel
 from dataset_lightning.lightning_datamodule import DataModule
 import numpy as np
 
-
 def run_inference():
     """
     Runs inference on a test sample using the best model checkpoint and saves the output audio
@@ -38,7 +37,7 @@ def run_inference():
 
     print("Transformer init done")
 
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=02-acc=00.ckpt")
+    best_checkpoint_path = os.path.join(config.root_checkpoint, "best-checkpoint-v2.ckpt")
 
     model = AudioVideoTransformer.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
@@ -112,10 +111,9 @@ def run_inference():
     torchaudio.save(preprocessed_audio_path, preprocessed_audio_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Preprocessed audio saved to '{preprocessed_audio_path}'")
 
-
+    # Visualize the predicted clean audio
     import matplotlib.pyplot as plt
-
-    plt.plot(clean_audio.cpu().numpy()[0])
+    plt.plot(clean_audio[0])  # clean_audio is already a NumPy array
     plt.title("Predicted Clean Audio (Inference)")
     plt.show()
 
@@ -125,7 +123,6 @@ def run_inference():
     plt.show()
 
     print("Inference complete!")
-
 
 
 if __name__ == "__main__":

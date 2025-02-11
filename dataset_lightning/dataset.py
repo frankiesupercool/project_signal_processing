@@ -307,9 +307,12 @@ class PreprocessingDataset(Dataset):
         audio_lrs3_file, video_lrs3_file = paired_line.split('\t')
 
         preprocessed_video = self._preprocess_video(video_lrs3_file)
+        preprocessed_video = torch.from_numpy(preprocessed_video).float() / 255.0
+
         preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
 
+        # Downsample clean speech to target sample rate
         clean_speech = torchaudio.functional.resample(
             speech_waveform.squeeze(1),  # if clean_speech has a singleton channel dimension
             orig_freq=self.upsampled_sample_rate,  # 51200 Hz

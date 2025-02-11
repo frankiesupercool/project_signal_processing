@@ -56,7 +56,8 @@ class VideoPreprocessingService(nn.Module):
         #Load the model from the lrw_resnet18_dctcn_video_boundary.pth file
         self.model = self.load_model(load_path=self.model_path,
                                      model=self.model,
-                                     allow_size_mismatch=self.allow_size_mismatch)
+                                     allow_size_mismatch=self.allow_size_mismatch,
+                                     )
 
 
 
@@ -120,7 +121,7 @@ class VideoPreprocessingService(nn.Module):
 
         # -- load dictionary
         assert os.path.isfile(load_path), "Error when loading the model, provided path not found: {}".format(load_path)
-        checkpoint = torch.load(load_path, weights_only=True)
+        checkpoint = torch.load(load_path, weights_only=True, map_location=torch.device("cpu"))
         loaded_state_dict = checkpoint['model_state_dict']
 
         if allow_size_mismatch:

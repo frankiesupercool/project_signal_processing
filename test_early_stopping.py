@@ -88,12 +88,12 @@ def test():
     # setup trainer
     trainer = pl.Trainer(
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=config.gpus,
+        devices=1 if not torch.cuda.is_available() else config.gpus,
         log_every_n_steps=1
     )
     print("Trainer setup done")
-    print("Start testing")
 
+    print("Start testing")
     # test loop
     test_results = trainer.test(model=model, datamodule=data_module)
 
@@ -101,48 +101,48 @@ def test():
     print(f"Test Results: {test_results}")
 
     print("Save enhanced audio")
-    # fetch a test batch
+    # Fetch a test batch
     test_loader = data_module.test_dataloader()
     test_iter = iter(test_loader)
     test_batch = next(test_iter)
 
-    # print("keys:", test_batch.keys())
+    print("Test batch keys:", test_batch.keys())  # Debugging available keys
 
-    preprocessed_audio = test_batch['encoded_audio'].to(model.device)
+    preprocessed_audio = test_batch['clean_speech'].to(model.device)  # Move to correct device
     preprocessed_video = test_batch['encoded_video'].to(model.device)
 
     with torch.no_grad():
         clean_audio = model(preprocessed_audio, preprocessed_video)
 
-    # save enhanced audio
+    # **Save Model Output (Enhanced Audio)**
     clean_audio = clean_audio.cpu().numpy()
     concatenated_audio = np.concatenate(clean_audio, axis=-1)
-    model_output_path = "clean_audio_long.wav"
+    model_output_path = "test_clean_audio_long.wav"
     torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Enhanced clean audio saved to '{model_output_path}'")
 
-    # save ground Truth
-    clean_speech = test_batch['clean_speech'].cpu().numpy()  # shape: (2, 1, 16000)
-    clean_speech = np.squeeze(clean_speech, axis=1)  # remove extra dimension
+    # **Save Ground Truth Clean Speech**
+    clean_speech = test_batch['clean_speech'].cpu().numpy()  # Shape: (batch_size, 1, 16000)
+    clean_speech = np.squeeze(clean_speech, axis=1)  # Remove extra dimension
     concatenated_clean_speech = np.concatenate(clean_speech, axis=-1).astype(np.float32)
     clean_speech_tensor = torch.tensor(concatenated_clean_speech)
-    ground_truth_path = "ground_truth_clean_speech.wav"
+    ground_truth_path = "test_ground_truth_clean_speech.wav"
     torchaudio.save(ground_truth_path, clean_speech_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Ground truth clean speech saved to '{ground_truth_path}'")
 
-    # save preprocessed audio, todo sample rate
-    preprocessed_audio_np = preprocessed_audio.cpu().numpy()
-    preprocessed_audio_np = np.squeeze(preprocessed_audio_np, axis=1)  # remove extra dimension
+    # **Save Preprocessed Audio**
+    preprocessed_audio_np = preprocessed_audio.cpu().numpy()  # Convert to numpy
+    preprocessed_audio_np = np.squeeze(preprocessed_audio_np, axis=1)  # Remove extra dimension
     concatenated_preprocessed_audio = np.concatenate(preprocessed_audio_np, axis=-1).astype(np.float32)
     preprocessed_audio_tensor = torch.tensor(concatenated_preprocessed_audio)
-    preprocessed_audio_path = "preprocessed_audio_long.wav"
+    preprocessed_audio_path = "test_preprocessed_audio_long.wav"
     torchaudio.save(preprocessed_audio_path, preprocessed_audio_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Preprocessed audio saved to '{preprocessed_audio_path}'")
 
 
 if __name__ == "__main__":
     # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-    print(torch.cuda.device_count())  # Should print 1 (if CUDA_VISIBLE_DEVICES is set)
-    print(torch.cuda.current_device())  # Should be 0 (but it maps to actual GPU 1)
-    print(torch.cuda.get_device_name(0))  # Should show GPU 1's name
+    #print(torch.cuda.device_count())  # Should print 1 (if CUDA_VISIBLE_DEVICES is set)
+    #print(torch.cuda.current_device())  # Should be 0 (but it maps to actual GPU 1)
+    #print(torch.cuda.get_device_name(0))  # Should show GPU 1's name
     test()
