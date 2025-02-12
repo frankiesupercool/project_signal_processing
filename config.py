@@ -7,12 +7,12 @@ TEST_DATA_PATH = "../../../../data/datasets/LRS3/test"               # Path to t
 DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
-batch_size = 16
+batch_size = 32
 num_workers = 2
 
 # setting sample size to 0.4s - audio up sampled to 51.2kHz 0.4*51.2k=20480
-fixed_length = 51200
-fixed_frames=25
+fixed_length = 102400
+fixed_frames=50
 
 # video encoding options
 densetcn_options = {
