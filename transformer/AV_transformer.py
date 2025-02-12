@@ -37,6 +37,8 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
+        if clean_speech.dim() == 3 and clean_speech.shape[1] == 1:
+            clean_speech = clean_speech.squeeze(1)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
@@ -80,6 +82,8 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
+        if clean_speech.dim() == 3 and clean_speech.shape[1] == 1:
+            clean_speech = clean_speech.squeeze(1)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
@@ -126,6 +130,8 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
+        if clean_speech.dim() == 3 and clean_speech.shape[1] == 1:
+            clean_speech = clean_speech.squeeze(1)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
