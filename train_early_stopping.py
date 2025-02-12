@@ -109,6 +109,7 @@ def train():
 
     print("Training complete!")
     print(f"Best checkpoint saved at: {checkpoint_callback.best_model_path}")
+    config.best_checkpoint = checkpoint_callback.best_model_path
 
 
 if __name__ == "__main__":

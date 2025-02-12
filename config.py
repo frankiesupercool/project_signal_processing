@@ -47,4 +47,5 @@ max_epochs = 100
 
 # root checkpoint save - public available checkpoints folder on sppc25
 root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
+checkpoint = "../../../../data/datasets/checkpoints/sp2025/checkpoint_epoch=33-acc=00.ckpt"
 log_folder = "../../../../data/datasets/checkpoints/sp2025"
