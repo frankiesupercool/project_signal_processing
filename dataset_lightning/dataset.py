@@ -2,13 +2,14 @@ import os
 import random
 import torch
 import torchaudio
+from requests.packages import target
 from torch.utils.data import Dataset
 import linecache  # Import linecache for reading specific lines from files
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000):
+                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames = 100):
 
         """
         Args:
@@ -28,6 +29,7 @@ class PreprocessingDataset(Dataset):
         self.sample_rate = sample_rate
         self.mode_prob = mode_prob
         self.fixed_length = fixed_length  # Fixed length for audio samples
+        self.target_frames = fixed_frames
         self.upsampled_sample_rate = upsampled_sample_rate
 
 
@@ -50,7 +52,7 @@ class PreprocessingDataset(Dataset):
         if len(self.speakers) < 2:
             raise ValueError("Need at least two speakers in LRS3 dataset for speaker separation.")
 
-        self.video_processor = VideoPreprocessorSimple(target_frames=100, fps=25.0)
+        self.video_processor = VideoPreprocessorSimple(target_frames=self.target_frames, fps=25.0)
 
     def _write_paired_file_list(self, root_dir, output_file, audio_ext='.wav', video_ext='.mp4'):
         with open(output_file, 'w') as f:

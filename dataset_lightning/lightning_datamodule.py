@@ -74,7 +74,8 @@ class DataModule(pl.LightningDataModule):
             'sample_rate': self.sample_rate,
             'mode_prob': self.mode_prob,
             'fixed_length': self.fixed_length,
-            'upsampled_sample_rate': self.upsampled_sample_rate
+            'upsampled_sample_rate': self.upsampled_sample_rate,
+            'fixed_frames': self.fixed_frames
         }
 
         if stage == 'fit' or stage is None:
