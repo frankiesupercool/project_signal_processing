@@ -4,7 +4,8 @@
 sample_root="../tiny_sample_data/data/"
 PRETRAIN_DATA_PATH = sample_root + "LRS3/pretrain"       # Path to pretraining data
 TRAINVAL_DATA_PATH = sample_root + "LRS3/trainval"       # Path to training-validation data
-TEST_DATA_PATH = sample_root + "LRS3/test_test"               # Path to test data
+#TEST_DATA_PATH = sample_root + "LRS3/test_test"               # Path to test data
+TEST_DATA_PATH = sample_root + "LRS3/pretrain"               # Path to test data
 DNS_DATA_PATH = "../sample_data/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
@@ -36,7 +37,7 @@ backbone_type = "resnet"
 
 
 # audio model and processing configurations
-snr_db = 40
+snr_db = 10
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
 upsample_factor = 3.2

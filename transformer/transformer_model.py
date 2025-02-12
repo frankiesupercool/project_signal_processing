@@ -107,6 +107,10 @@ class TransformerModel(nn.Module):
             orig_freq=self.upsampled_sample_rate,
             new_freq=self.target_rate
         )
+
+        print("Decoder output shape:", decoded_audio.shape)
+        print("Decoder output min/max:", decoded_audio.min().item(), decoded_audio.max().item())
+
         return decoded_audio
 
 

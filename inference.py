@@ -38,12 +38,12 @@ def run_inference():
 
     print("Transformer init done")
 
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=02-acc=00.ckpt")
+    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=01-val_loss=0.076.ckpt")
 
     model = AudioVideoTransformer.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
         model=transformer_model_instance,
-        learning_rate=1e-5
+        learning_rate=1e-3
     )
 
     model.eval()
@@ -60,7 +60,7 @@ def run_inference():
         transform=None,
         sample_rate=config.sample_rate,
         mode_prob=config.mode_prob,
-        batch_size=1,  # two samples.. todo
+        batch_size=1,
         num_workers=config.num_workers,
         fixed_length=config.fixed_length,
         fixed_frames=config.fixed_frames,
@@ -104,23 +104,35 @@ def run_inference():
     print(f"Ground truth clean speech saved to '{ground_truth_path}'")
 
     # save preprocessed audio, todo sample rate
+    # Downsample preprocessed audio to original sample rate
     preprocessed_audio_np = preprocessed_audio.cpu().numpy()
     preprocessed_audio_np = np.squeeze(preprocessed_audio_np, axis=1)  # remove extra dimension
     concatenated_preprocessed_audio = np.concatenate(preprocessed_audio_np, axis=-1).astype(np.float32)
     preprocessed_audio_tensor = torch.tensor(concatenated_preprocessed_audio)
+
+    # Resample preprocessed audio to original sample rate
+    preprocessed_audio_resampled = torchaudio.functional.resample(
+        preprocessed_audio_tensor.unsqueeze(0),  # Add batch dimension
+        orig_freq=config.upsampled_sample_rate,  # Original upsampled sample rate (e.g., 51.2 kHz)
+        new_freq=config.sample_rate  # Target sample rate (e.g., 16 kHz)
+    )
+
+    # Save downsampled preprocessed audio
     preprocessed_audio_path = "preprocessed_audio_long.wav"
-    torchaudio.save(preprocessed_audio_path, preprocessed_audio_tensor.unsqueeze(0), sample_rate=config.sample_rate)
+    torchaudio.save(preprocessed_audio_path, preprocessed_audio_resampled, sample_rate=config.sample_rate)
     print(f"Preprocessed audio saved to '{preprocessed_audio_path}'")
+
 
 
     import matplotlib.pyplot as plt
 
-    plt.plot(clean_audio.cpu().numpy()[0])
+    #plt.plot(clean_audio.cpu().numpy()[0])
+    plt.plot(clean_audio)
     plt.title("Predicted Clean Audio (Inference)")
     plt.show()
 
     # Visualize the ground truth clean audio
-    plt.plot(test_batch['clean_speech'].cpu().numpy()[0])
+    plt.plot(clean_speech_tensor)
     plt.title("Ground Truth Clean Audio (Inference)")
     plt.show()
 

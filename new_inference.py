@@ -37,7 +37,8 @@ def run_inference():
 
     print("Transformer init done")
 
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "best-checkpoint-v2.ckpt")
+    #best_checkpoint_path = os.path.join(config.root_checkpoint, "best-checkpoint-v2.ckpt")
+    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=01-acc=00-v1.ckpt")
 
     model = AudioVideoTransformer.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
@@ -113,12 +114,12 @@ def run_inference():
 
     # Visualize the predicted clean audio
     import matplotlib.pyplot as plt
-    plt.plot(clean_audio[0])  # clean_audio is already a NumPy array
+    plt.plot(clean_audio)  # clean_audio is already a NumPy array
     plt.title("Predicted Clean Audio (Inference)")
     plt.show()
 
     # Visualize the ground truth clean audio
-    plt.plot(test_batch['clean_speech'].cpu().numpy()[0])
+    plt.plot(clean_speech[0])
     plt.title("Ground Truth Clean Audio (Inference)")
     plt.show()
 

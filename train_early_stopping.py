@@ -64,7 +64,7 @@ def train():
     )
 
     # 3) Create your LightningModule with the model
-    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=1e-5)
+    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=1e-3)
 
     # 4) Define callbacks for early stopping and saving the best checkpoint
     early_stopping_callback = EarlyStopping(
@@ -78,7 +78,7 @@ def train():
         dirpath=config.root_checkpoint,     # directory to save checkpoints
         save_top_k=-1,              # only save the best model
         mode='min',                 # we want to minimize val_loss
-        filename='checkpoint_{epoch:02d}-{acc:02.0f}',
+        filename='checkpoint_{epoch:02d}-{val_loss:.3f}',
         auto_insert_metric_name=True
     )
 
