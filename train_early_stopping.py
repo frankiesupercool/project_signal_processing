@@ -71,7 +71,7 @@ def train():
         denoiser_decoder=denoiser_decoder
     )
 
-    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=1e-5)
+    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=5e-5)
 
     early_stopping_callback = EarlyStopping(
         monitor='val_loss',  # name of the logged validation metric to monitor
@@ -84,7 +84,7 @@ def train():
         dirpath=config.root_checkpoint,
         save_top_k=-1,  # save after each epoch - incase training get interrupted
         mode='min',  # we want to minimize val_loss
-        filename='checkpoint_{epoch:02d}-{acc:02.0f}',
+        filename='checkpoint_{epoch:02d}-{val_loss:.3f}',
         auto_insert_metric_name=True
     )
 
@@ -109,7 +109,7 @@ def train():
 
     print("Training complete!")
     print(f"Best checkpoint saved at: {checkpoint_callback.best_model_path}")
-    config.best_checkpoint = checkpoint_callback.best_model_path
+    config.checkpoint = checkpoint_callback.best_model_path
 
 
 if __name__ == "__main__":

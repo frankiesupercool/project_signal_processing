@@ -35,7 +35,7 @@ backbone_type = "resnet"
 
 
 # audio model and processing configurations
-snr_db = 10
+snr_db = 25
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
 upsample_factor = 3.2
@@ -43,9 +43,9 @@ upsampled_sample_rate = int(sample_rate * upsample_factor)
 
 # trainer
 gpus = [1]
-max_epochs = 100
+max_epochs = 50
 
 # root checkpoint save - public available checkpoints folder on sppc25
 root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
-checkpoint = "../../../../data/datasets/checkpoints/sp2025/checkpoint_epoch=33-acc=00.ckpt"
+checkpoint = "../../../../data/datasets/checkpoints/sp2025/checkpoint_epoch=99-acc=00.ckpt"
 log_folder = "../../../../data/datasets/checkpoints/sp2025"

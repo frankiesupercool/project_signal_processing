@@ -37,8 +37,6 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
-        if clean_speech.dim() == 3 and clean_speech.shape[1] == 1:
-            clean_speech = clean_speech.squeeze(1)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
@@ -82,8 +80,6 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
-        if clean_speech.dim() == 3 and clean_speech.shape[1] == 1:
-            clean_speech = clean_speech.squeeze(1)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
@@ -130,8 +126,6 @@ class AudioVideoTransformer(pl.LightningModule):
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
-        if clean_speech.dim() == 3 and clean_speech.shape[1] == 1:
-            clean_speech = clean_speech.squeeze(1)
 
         # Check for NaNs or Infs in inputs and targets
         if not torch.isfinite(encoded_audio).all():
@@ -166,11 +160,19 @@ class AudioVideoTransformer(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        """
-        Configure the optimizer. Feel free to change optimizer & learning rate if needed.
-        """
-        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0001)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.9, patience=1
+        )
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'monitor': 'val_loss',
+                'interval': 'epoch',
+                'frequency': 1,
+            }
+        }
 
     def on_train_epoch_end(self):
         """
