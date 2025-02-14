@@ -145,8 +145,6 @@ class TransformerModel(nn.Module):
         )
         return decoded_audio
 
-
-
     def _encode_video(self, video):
         encoded_video = self.lipreading_preprocessing.generate_encodings(video)
         encoded_video = encoded_video.squeeze(0)
@@ -155,13 +153,15 @@ class TransformerModel(nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)  # Better for deep networks
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
+                if m.weight.requires_grad:
+                    nn.init.xavier_uniform_(m.weight)  # Better for deep networks
+                    if m.bias is not None:
+                        nn.init.zeros_(m.bias)
             elif isinstance(m, nn.TransformerEncoderLayer):
-                for param in m.parameters():
-                    if param.dim() > 1:  # Only for weight matrices
-                        nn.init.xavier_uniform_(param)
+                if m.weight.requires_grad:
+                    for param in m.parameters():
+                        if param.dim() > 1:  # Only for weight matrices
+                            nn.init.xavier_uniform_(param)
 
     def forward(self, preprocessed_audio, preprocessed_video):
         """
