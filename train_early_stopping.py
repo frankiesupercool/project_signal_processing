@@ -75,7 +75,7 @@ def train():
 
     early_stopping_callback = EarlyStopping(
         monitor='val_loss',  # name of the logged validation metric to monitor
-        patience=3,  # number of epochs with no improvement before stopping
+        patience=5,  # number of epochs with no improvement before stopping
         mode='min'  # we want to minimize val_loss
     )
 

@@ -7,6 +7,7 @@ from transformer.AV_transformer import AudioVideoTransformer
 from transformer.transformer_model import TransformerModel
 from dataset_lightning.lightning_datamodule import DataModule
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def run_inference():
@@ -108,6 +109,24 @@ def run_inference():
     preprocessed_audio_path = "preprocessed_audio_long.wav"
     torchaudio.save(preprocessed_audio_path, preprocessed_audio_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Preprocessed audio saved to '{preprocessed_audio_path}'")
+
+    # Visualize the predicted clean audio
+    plt.figure(figsize=(10, 4))
+    plt.plot(concatenated_audio, label="Predicted Clean Audio", color="blue")
+    plt.xlabel("Time (samples)")
+    plt.ylabel("Amplitude")
+    plt.title("Predicted Clean Audio (Inference)")
+    plt.legend()
+    plt.show()
+
+    # Visualize the ground truth clean audio
+    plt.figure(figsize=(10, 4))
+    plt.plot(concatenated_clean_speech, label="Ground Truth Clean Audio", color="green")
+    plt.xlabel("Time (samples)")
+    plt.ylabel("Amplitude")
+    plt.title("Ground Truth Clean Audio (Inference)")
+    plt.legend()
+    plt.show()
 
     print("Inference complete!")
 

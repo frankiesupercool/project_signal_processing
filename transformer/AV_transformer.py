@@ -54,7 +54,7 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
-        loss = self.criterion(predicted_clean, clean_speech)
+        loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
         # Determine batch size
         batch_size = encoded_audio.shape[0]
@@ -97,7 +97,7 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
-        loss = self.criterion(predicted_clean, clean_speech)
+        loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
         # Determine batch size
         batch_size = encoded_audio.shape[0]
@@ -143,7 +143,7 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
-        loss = self.criterion(predicted_clean, clean_speech)
+        loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
         # Determine batch size
         batch_size = encoded_audio.shape[0]

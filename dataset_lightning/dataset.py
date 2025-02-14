@@ -2,14 +2,13 @@ import os
 import random
 import torch
 import torchaudio
-from requests.packages import target
 from torch.utils.data import Dataset
 import linecache  # Import linecache for reading specific lines from files
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames = 100):
+                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100):
 
         """
         Args:
