@@ -150,18 +150,18 @@ class TransformerModel(nn.Module):
         encoded_video = encoded_video.squeeze(0)
         return encoded_video
 
-    def _initialize_weights(self):
-        for m in self.modules():
+    def _initialize_weights(model):
+        # only init if parameter is trainable
+        for m in model.modules():
             if isinstance(m, nn.Linear):
                 if m.weight.requires_grad:
-                    nn.init.xavier_uniform_(m.weight)  # Better for deep networks
-                    if m.bias is not None:
-                        nn.init.zeros_(m.bias)
+                    nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None and m.bias.requires_grad:
+                    nn.init.zeros_(m.bias)
             elif isinstance(m, nn.TransformerEncoderLayer):
-                if m.weight.requires_grad:
-                    for param in m.parameters():
-                        if param.dim() > 1:  # Only for weight matrices
-                            nn.init.xavier_uniform_(param)
+                for param in m.parameters():
+                    if param.requires_grad and param.dim() > 1:
+                        nn.init.xavier_uniform_(param)
 
     def forward(self, preprocessed_audio, preprocessed_video):
         """
