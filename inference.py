@@ -38,7 +38,7 @@ def run_inference():
 
     print("Transformer init done")
 
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "best-checkpoint.ckpt")
+    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=53-val_loss=0.046.ckpt")
 
     model = AudioVideoTransformer.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
@@ -108,6 +108,26 @@ def run_inference():
     preprocessed_audio_path = "preprocessed_audio_long.wav"
     torchaudio.save(preprocessed_audio_path, preprocessed_audio_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Preprocessed audio saved to '{preprocessed_audio_path}'")
+
+    import matplotlib.pyplot as plt
+
+    # Visualize the predicted clean audio
+    plt.figure(figsize=(10, 4))
+    plt.plot(concatenated_audio, label="Predicted Clean Audio", color="blue")
+    plt.xlabel("Time (samples)")
+    plt.ylabel("Amplitude")
+    plt.title("Predicted Clean Audio (Inference)")
+    plt.legend()
+    plt.show()
+
+    # Visualize the ground truth clean audio
+    plt.figure(figsize=(10, 4))
+    plt.plot(concatenated_clean_speech, label="Ground Truth Clean Audio", color="green")
+    plt.xlabel("Time (samples)")
+    plt.ylabel("Amplitude")
+    plt.title("Ground Truth Clean Audio (Inference)")
+    plt.legend()
+    plt.show()
 
     print("Inference complete!")
 

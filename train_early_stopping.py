@@ -22,6 +22,7 @@ def train():
     """
 
     latest_checkpoint = get_latest_checkpoint(config.root_checkpoint)
+    #latest_checkpoint = None
 
     # define dataset paths
     pretrain_root = config.PRETRAIN_DATA_PATH
@@ -93,8 +94,8 @@ def train():
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=config.gpus,
-        precision='16-mixed',
+        devices=1 if not torch.cuda.is_available() else config.gpus,
+        #precision='16-mixed',
         callbacks=[early_stopping_callback, checkpoint_callback],
         log_every_n_steps=100,
         logger=logger
@@ -110,6 +111,21 @@ def train():
     print("Training complete!")
     print(f"Best checkpoint saved at: {checkpoint_callback.best_model_path}")
     config.checkpoint = checkpoint_callback.best_model_path
+
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    log_dir = os.path.join(config.log_folder, "version_0", "metrics.csv")  # Adjust path if needed
+    df = pd.read_csv(log_dir)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(df["epoch"], df["train_loss"], label="Train Loss")
+    plt.plot(df["epoch"], df["val_loss"], label="Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.title("Training & Validation Loss Over Time")
+    plt.show()
 
 
 if __name__ == "__main__":

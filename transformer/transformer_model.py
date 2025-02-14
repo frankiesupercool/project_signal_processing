@@ -48,7 +48,7 @@ class TransformerModel(nn.Module):
         self.upsampled_sample_rate = config.upsampled_sample_rate
         self.target_rate = config.sample_rate
 
-        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=True)
+        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=False)
 
         self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
         self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
@@ -75,6 +75,8 @@ class TransformerModel(nn.Module):
 
         for param in self.denoiser_decoder.parameters():
             param.requires_grad = False
+
+        self._initialize_weights()
 
     def _encode_audio(self, audio):
         """
@@ -150,6 +152,16 @@ class TransformerModel(nn.Module):
         encoded_video = encoded_video.squeeze(0)
         return encoded_video
 
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)  # Better for deep networks
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.TransformerEncoderLayer):
+                for param in m.parameters():
+                    if param.dim() > 1:  # Only for weight matrices
+                        nn.init.xavier_uniform_(param)
     def forward(self, preprocessed_audio, preprocessed_video):
         """
         Args:

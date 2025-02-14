@@ -70,8 +70,8 @@ def test():
     print("Transformer init done")
 
     # load best checkpoint
-    #best_checkpoint_path = config.root_checkpoint + "/best-checkpoint.ckpt"
-    best_checkpoint_path = config.checkpoint
+    best_checkpoint_path = config.root_checkpoint + "/checkpoint_epoch=10-val_loss=0.067.ckpt"
+    #best_checkpoint_path = config.checkpoint
 
     # model = AudioVideoTransformer.load_from_checkpoint(
     #     checkpoint_path=best_checkpoint_path
@@ -89,7 +89,7 @@ def test():
     # setup trainer
     trainer = pl.Trainer(
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=config.gpus,
+        devices=1 if not torch.cuda.is_available() else config.gpus,
         log_every_n_steps=1
     )
     print("Trainer setup done")
@@ -142,8 +142,4 @@ def test():
 
 
 if __name__ == "__main__":
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-    print(torch.cuda.device_count())  # Should print 1 (if CUDA_VISIBLE_DEVICES is set)
-    print(torch.cuda.current_device())  # Should be 0 (but it maps to actual GPU 1)
-    print(torch.cuda.get_device_name(0))  # Should show GPU 1's name
     test()
