@@ -56,4 +56,4 @@ class PositionalEncoder(nn.Module):
         if self.scale:
             pe = pe * (self.d_model ** 0.5)
 
-        return x + pe
+        return pe

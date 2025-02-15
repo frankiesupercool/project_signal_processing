@@ -7,12 +7,12 @@ TEST_DATA_PATH = "../../../../data/datasets/LRS3/test"               # Path to t
 DNS_DATA_PATH = "./../../../../data/datasets/denoiser_subset/datasets_fullband/noise_fullband" # Path to DNS noise data
 
 # general configs
-batch_size = 16
+batch_size = 32
 num_workers = 2
 
 # setting sample size to 0.4s - audio up sampled to 51.2kHz 0.4*51.2k=20480
-fixed_length = 51200
-fixed_frames=25
+fixed_length = 102400
+fixed_frames=50
 
 # video encoding options
 densetcn_options = {
@@ -35,15 +35,17 @@ backbone_type = "resnet"
 
 
 # audio model and processing configurations
-snr_db = 10
+snr_db = 25
 sample_rate = 16000
 mode_prob = {'speaker': 0.5, 'noise': 0.5}
 upsample_factor = 3.2
 upsampled_sample_rate = int(sample_rate * upsample_factor)
 
 # trainer
-gpus = [0]
-max_epochs = 100
+gpus = [1]
+max_epochs = 50
 
 # root checkpoint save - public available checkpoints folder on sppc25
 root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
+checkpoint = "../../../../data/datasets/checkpoints/sp2025/checkpoint_epoch=99-acc=00.ckpt"
+log_folder = "../../../../data/datasets/checkpoints/sp2025"

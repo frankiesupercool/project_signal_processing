@@ -48,7 +48,7 @@ class TransformerModel(nn.Module):
         self.upsampled_sample_rate = config.upsampled_sample_rate
         self.target_rate = config.sample_rate
 
-        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=True)
+        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length, zero_pad=False, scale=False)
 
         self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
         self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
@@ -76,32 +76,68 @@ class TransformerModel(nn.Module):
         for param in self.denoiser_decoder.parameters():
             param.requires_grad = False
 
+        self._initialize_weights()
+
     def _encode_audio(self, audio):
-        encoded_audio = audio
-        for i, layer in enumerate(self.encoder):
-            encoded_audio = layer(encoded_audio)
+        """
+        Runs the input audio through the encoder, storing skip connections.
+        Expects audio of shape [batch, channels, time].
+        Returns:
+            encoded_audio: [batch, time, features]
+            skip_connections: list of tensors, each with shape [batch, time, features]
+        """
+        skip_connections = []
+        x = audio
+        for layer in self.encoder:
+            x = layer(x)
+            skip_connections.append(x)  # Save output of each encoder block
+        # Permute final output to [batch, time, features]
+        encoded_audio = x.permute(0, 2, 1)
+        # Also permute each skip connection for easier fusion later
+        skip_connections = [s.permute(0, 2, 1) for s in skip_connections]
+        return encoded_audio, skip_connections
 
-        # permute to [batch_size, seq_len, embed_dim]
-        encoded_audio = encoded_audio.permute(0, 2, 1)  # [64, 61, 1024]
-        return encoded_audio
+    def _decode_audio(self, audio, skip_connections):
+        """
+        Decodes the fused audio representation, integrating skip connections.
+        Args:
+            audio: Tensor of shape [batch, seq_len, embed_dim] (transformer output)
+            skip_connections: list of tensors from the encoder.
+        Returns:
+            decoded_audio: Tensor of shape [batch, clean_audio_length]
+        """
+        # Project transformer output to decoder channels and permute for Conv1d layers
+        decoded_audio = self.proj_to_decoder(audio)  # [batch, seq_len, 1024]
+        decoded_audio = decoded_audio.permute(0, 2, 1)  # [batch, 1024, seq_len]
 
-    def _decode_audio(self, audio):
-        decoded_audio = self.proj_to_decoder(audio)
-        # Permute to match Conv1d expected input: [batch_size, channels, seq_len]
-        decoded_audio = decoded_audio.permute(0, 2, 1)  # Shape: [batch_size, 1024, seq_len]
-        for i , layer in enumerate(self.denoiser_decoder):
+        # Convert decoder modules into a list; assume they are iterable
+        # (This works for ModuleList or a Sequential module.)
+        decoder_layers = list(self.denoiser_decoder.children()) \
+                         if isinstance(self.denoiser_decoder, nn.Sequential) \
+                         else list(self.denoiser_decoder)
+
+        num_skips = len(skip_connections)
+        for i, layer in enumerate(decoder_layers):
+            # Add corresponding skip connection (in reverse order)
+            if i < num_skips:
+                skip = skip_connections[-(i+1)]
+                # Align temporal dimensions if needed
+                if skip.size(1) > decoded_audio.size(2):
+                    skip = skip[:, :decoded_audio.size(2), :]
+                elif skip.size(1) < decoded_audio.size(2):
+                    decoded_audio = decoded_audio[:, :, :skip.size(1)]
+                # Permute skip to match [batch, channels, seq_len]
+                skip = skip.permute(0, 2, 1)
+                decoded_audio = decoded_audio + skip
             decoded_audio = layer(decoded_audio)
 
-            # If the decoder output has a single channel but the temporal dimension is not what we expect,
-            # use adaptive pooling to reduce the time dimension first.
+        # If the decoder output does not match the expected fixed length, apply adaptive pooling
         if decoded_audio.size(1) == 1 and decoded_audio.size(2) != config.fixed_length:
-            # decoded_audio shape: [batch, 1, seq_len] where seq_len is large (e.g., ~122196)
-            # Apply adaptive average pooling to reduce the time dimension to a fixed intermediate size (e.g. 1024)
-            pooled = nn.functional.adaptive_avg_pool1d(decoded_audio, output_size=1024)  # Shape: [batch, 1, 1024]
-            pooled = pooled.squeeze(1)  # Now shape: [batch, 1024]
-            # Use a small linear projection to map to config.fixed_length
-            decoded_audio = self.final_projection(pooled)  # Shape: [batch, config.fixed_length]
-            # Downsample if necessary (this part remains unchanged)
+            pooled = nn.functional.adaptive_avg_pool1d(decoded_audio, output_size=1024)
+            pooled = pooled.squeeze(1)
+            decoded_audio = self.final_projection(pooled)
+
+        # Resample the output to the target sample rate
         decoded_audio = torchaudio.functional.resample(
             decoded_audio,
             orig_freq=self.upsampled_sample_rate,
@@ -109,11 +145,23 @@ class TransformerModel(nn.Module):
         )
         return decoded_audio
 
-
     def _encode_video(self, video):
         encoded_video = self.lipreading_preprocessing.generate_encodings(video)
         encoded_video = encoded_video.squeeze(0)
         return encoded_video
+
+    def _initialize_weights(model):
+        # only init if parameter is trainable
+        for m in model.modules():
+            if isinstance(m, nn.Linear):
+                if m.weight.requires_grad:
+                    nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None and m.bias.requires_grad:
+                    nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.TransformerEncoderLayer):
+                for param in m.parameters():
+                    if param.requires_grad and param.dim() > 1:
+                        nn.init.xavier_uniform_(param)
 
     def forward(self, preprocessed_audio, preprocessed_video):
         """
@@ -126,7 +174,7 @@ class TransformerModel(nn.Module):
         preprocessed_audio = preprocessed_audio
         preprocessed_video = preprocessed_video
 
-        encoded_audio = self._encode_audio(preprocessed_audio)
+        encoded_audio, skip_connections = self._encode_audio(preprocessed_audio)
         encoded_video = self._encode_video(preprocessed_video)
 
         if encoded_video.dim() == 4 and encoded_video.size(1) == 1:
@@ -156,7 +204,7 @@ class TransformerModel(nn.Module):
 
         #aggregated_output = torch.mean(transformer_output, dim=1)  # (batch_size, embed_dim)
         # Decode to clean audio
-        clean_audio = self._decode_audio(transformer_output) # (batch_size, total_seq_len, 64000)
+        clean_audio = self._decode_audio(transformer_output, skip_connections) # (batch_size, total_seq_len, 64000)
         # Check for NaNs or Infs in output
         if not torch.isfinite(clean_audio).all():
             raise ValueError("Model output contains NaNs or Infs")

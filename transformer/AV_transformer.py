@@ -11,7 +11,7 @@ class AudioVideoTransformer(pl.LightningModule):
         super(AudioVideoTransformer, self).__init__()
         self.model = model
         self.learning_rate = learning_rate
-        self.criterion = nn.MSELoss()  # Using Mean Squared Error loss
+        self.criterion = nn.L1Loss()  # L1Loss provides more variance in output than MSE
 
         # Initialize a counter for skipped batches
         self.skipped_batches = 0
@@ -54,7 +54,7 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
-        loss = self.criterion(predicted_clean, clean_speech)
+        loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
         # Determine batch size
         batch_size = encoded_audio.shape[0]
@@ -97,7 +97,7 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
-        loss = self.criterion(predicted_clean, clean_speech)
+        loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
         # Determine batch size
         batch_size = encoded_audio.shape[0]
@@ -143,7 +143,7 @@ class AudioVideoTransformer(pl.LightningModule):
 
         # Proceed with forward pass and loss computation
         predicted_clean = self(encoded_audio, encoded_video)
-        loss = self.criterion(predicted_clean, clean_speech)
+        loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
         # Determine batch size
         batch_size = encoded_audio.shape[0]
@@ -160,11 +160,19 @@ class AudioVideoTransformer(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        """
-        Configure the optimizer. Feel free to change optimizer & learning rate if needed.
-        """
-        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0001)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.9, patience=1
+        )
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'monitor': 'val_loss',
+                'interval': 'epoch',
+                'frequency': 1,
+            }
+        }
 
     def on_train_epoch_end(self):
         """
