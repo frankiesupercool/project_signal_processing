@@ -8,7 +8,7 @@ from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimpl
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100):
+                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100, dataset_tag=None):
 
         """
         Args:
@@ -34,7 +34,9 @@ class PreprocessingDataset(Dataset):
 
 
         # Save paired file paths to a single text file
-        self.paired_files_list = 'paired_files.txt'
+        # Use dataset_tag to create unique file names.
+        tag = dataset_tag if dataset_tag is not None else os.path.basename(os.path.normpath(lrs3_root))
+        self.paired_files_list = f'paired_files_{tag}.txt'
         self.dns_files_list = 'dns_files.txt'
 
         if not os.path.exists(self.paired_files_list):
