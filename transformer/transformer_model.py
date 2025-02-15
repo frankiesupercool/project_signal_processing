@@ -39,8 +39,7 @@ class TransformerModel(nn.Module):
         self.model = pretrained.dns64()
         # Initialize the denoiser encoder
         self.encoder = self.model.encoder
-        for param in self.encoder.parameters():
-            param.requires_grad = False
+        self._mark_pretrained(self.encoder)
 
         self.audio_proj = nn.Linear(audio_dim, embed_dim)  # Project audio to embed_dim
         self.video_proj = nn.Linear(video_dim, embed_dim)
@@ -72,9 +71,8 @@ class TransformerModel(nn.Module):
                 nn.ReLU(),
                 nn.Linear(1024, config.fixed_length)  # Map to waveform length
             )
+        self._mark_pretrained(self.denoiser_decoder)
 
-        for param in self.denoiser_decoder.parameters():
-            param.requires_grad = False
 
         self._initialize_weights()
 
@@ -150,12 +148,18 @@ class TransformerModel(nn.Module):
         encoded_video = encoded_video.squeeze(0)
         return encoded_video
 
-    def _initialize_weights(model):
-        # only init if parameter is trainable
-        for m in model.modules():
-            if isinstance(m, nn.Linear):
-                if m.weight.requires_grad:
-                    nn.init.xavier_uniform_(m.weight)
+    def _mark_pretrained(self, module):
+        """Recursively mark all submodules of a pretrained module."""
+        for m in module.modules():
+            m.pretrained = True
+
+    def _initialize_weights(self):
+        # Only initialize weights for trainable modules that are not marked as pretrained.
+        for m in self.modules():
+            if hasattr(m, 'pretrained') and m.pretrained:
+                continue
+            if isinstance(m, nn.Linear) and m.weight.requires_grad:
+                nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None and m.bias.requires_grad:
                     nn.init.zeros_(m.bias)
             elif isinstance(m, nn.TransformerEncoderLayer):
