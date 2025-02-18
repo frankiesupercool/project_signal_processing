@@ -197,9 +197,10 @@ class PreprocessingDataset(Dataset):
             # resample
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
                                                                   new_freq=self.sample_rate)
-
-            # normalize
-            interfering_waveform = interfering_waveform / (interfering_waveform.abs().max() + 1e-10)
+            # Use standard deviation based normalization (as in the original model)
+            mono = interfering_waveform.mean(dim=0, keepdim=True)
+            std = mono.std(dim=-1, keepdim=True)
+            interfering_waveform = interfering_waveform / (std + 1e-3)  # using a small floor similar to the original floor
 
             # up sample by 3.2x for the network (16 kHz → 51.2 kHz)
             interfering_waveform = torchaudio.functional.resample(
@@ -241,8 +242,11 @@ class PreprocessingDataset(Dataset):
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
                                                                   new_freq=self.sample_rate)
 
-            # normalize
-            interfering_waveform = interfering_waveform / (interfering_waveform.abs().max() + 1e-10)
+            # Use standard deviation based normalization (as in the original model)
+            mono = interfering_waveform.mean(dim=0, keepdim=True)
+            std = mono.std(dim=-1, keepdim=True)
+            interfering_waveform = interfering_waveform / (
+                        std + 1e-3)  # using a small floor similar to the original floor
 
             # up sample by 3.2x for the network (16 kHz → 51.2 kHz)
             interfering_waveform = torchaudio.functional.resample(
@@ -273,8 +277,11 @@ class PreprocessingDataset(Dataset):
         speech_waveform = torchaudio.functional.resample(speech_waveform, orig_freq=orig_sample_rate,
                                                          new_freq=self.sample_rate)
 
-        # normalize
-        speech_waveform = speech_waveform / (speech_waveform.abs().max() + 1e-10)
+
+        # Use standard deviation based normalization (as in the original model)
+        mono = speech_waveform.mean(dim=0, keepdim=True)
+        std = mono.std(dim=-1, keepdim=True)
+        speech_waveform = speech_waveform / (std + 1e-3)
 
         # upsample by 3.2x for the network (16 kHz → 51.2 kHz)
         speech_waveform = torchaudio.functional.resample(
