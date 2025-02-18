@@ -83,20 +83,23 @@ class DataModule(pl.LightningDataModule):
 
             self.pretrain_dataset = PreprocessingDataset(
                 lrs3_root=self.pretrain_root,
-                **general_config
+                **general_config,
+                dataset_tag='pretrain'
             )
 
             # Instantiate the trainval dataset
             self.trainval_dataset = PreprocessingDataset(
                 lrs3_root=self.trainval_root,
-                **general_config
+                **general_config,
+                dataset_tag='trainval'
             )
 
         if stage == 'test' or stage is None:
             # Instantiate the test dataset
             self.test_dataset = PreprocessingDataset(
                 lrs3_root=self.test_root,
-                **general_config
+                **general_config,
+                dataset_tag='test'
             )
 
     def train_dataloader(self):

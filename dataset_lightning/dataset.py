@@ -8,7 +8,7 @@ from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimpl
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100):
+                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100, dataset_tag=None):
 
         """
         Args:
@@ -34,7 +34,9 @@ class PreprocessingDataset(Dataset):
 
 
         # Save paired file paths to a single text file
-        self.paired_files_list = 'paired_files.txt'
+        # Use dataset_tag to create unique file names.
+        tag = dataset_tag if dataset_tag is not None else os.path.basename(os.path.normpath(lrs3_root))
+        self.paired_files_list = f'paired_files_{tag}.txt'
         self.dns_files_list = 'dns_files.txt'
 
         if not os.path.exists(self.paired_files_list):
@@ -202,13 +204,6 @@ class PreprocessingDataset(Dataset):
             std = mono.std(dim=-1, keepdim=True)
             interfering_waveform = interfering_waveform / (std + 1e-3)  # using a small floor similar to the original floor
 
-            # up sample by 3.2x for the network (16 kHz → 51.2 kHz)
-            interfering_waveform = torchaudio.functional.resample(
-                interfering_waveform,
-                orig_freq=self.sample_rate,
-                new_freq=self.upsampled_sample_rate
-            )
-
             # Pad or truncate interfering waveform to fixed length
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
 
@@ -248,13 +243,6 @@ class PreprocessingDataset(Dataset):
             interfering_waveform = interfering_waveform / (
                         std + 1e-3)  # using a small floor similar to the original floor
 
-            # up sample by 3.2x for the network (16 kHz → 51.2 kHz)
-            interfering_waveform = torchaudio.functional.resample(
-                interfering_waveform,
-                orig_freq=self.sample_rate,
-                new_freq=self.upsampled_sample_rate
-            )
-
             # Pad or truncate interfering waveform to fixed length
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
 
@@ -282,13 +270,6 @@ class PreprocessingDataset(Dataset):
         mono = speech_waveform.mean(dim=0, keepdim=True)
         std = mono.std(dim=-1, keepdim=True)
         speech_waveform = speech_waveform / (std + 1e-3)
-
-        # upsample by 3.2x for the network (16 kHz → 51.2 kHz)
-        speech_waveform = torchaudio.functional.resample(
-            speech_waveform,
-            orig_freq=self.sample_rate,
-            new_freq=self.upsampled_sample_rate
-        )
 
         # Pad or truncate speech waveform to fixed length
         speech_waveform = self.pad_or_truncate(speech_waveform, self.fixed_length)
@@ -318,16 +299,10 @@ class PreprocessingDataset(Dataset):
         preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
             audio_lrs3_file)
 
-        clean_speech = torchaudio.functional.resample(
-            speech_waveform.squeeze(1),  # if clean_speech has a singleton channel dimension
-            orig_freq=self.upsampled_sample_rate,  # 51200 Hz
-            new_freq=self.sample_rate  # 16000 Hz
-        )
-
         sample = {
             'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
             'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
-            'clean_speech': clean_speech,  # shape: [1, samples]
+            'clean_speech': speech_waveform,  # shape: [1, samples]
             'audio_file_path': audio_lrs3_file,
             'video_file_path': video_lrs3_file
         }
