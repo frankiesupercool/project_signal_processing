@@ -1,44 +1,33 @@
-# train_av.py
+import numpy as np
 import pytorch_lightning as pl
 import torch
-from torch import nn, optim
-from torchmetrics import MeanMetric, MinMetric, SignalDistortionRatio
-import logging
+import torchaudio
 import os
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from pytorch_lightning.loggers import CSVLogger
 import glob
-
-# Import your DataModule and new integrated model
 from dataset_lightning.lightning_datamodule import DataModule
 from AV_transformer_model.AV_transformer import AVTransformer
 from AV_transformer_model.AV_module import AVTransformerLightningModule
 import config
 
-# Configure logging
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger(__name__)
-
 
 def get_latest_checkpoint(checkpoint_dir):
-    """Use latest saved checkpoint to resume training."""
-    checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "*.ckpt")), key=os.path.getmtime, reverse=True)
+    checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "*.ckpt")),
+                         key=os.path.getmtime, reverse=True)
     return checkpoints[0] if checkpoints else None
 
 
-def train():
+def test():
     """
-    Training script with early stopping and checkpointing.
+    Testing script that loads the best checkpoint, runs the test loop (with integrated metric computation),
+    and saves the enhanced audio.
     """
-    latest_checkpoint = get_latest_checkpoint(config.root_checkpoint)
+    print("Setting up testing...")
 
-    # Define dataset paths from config
+    # Define dataset paths
     pretrain_root = config.PRETRAIN_DATA_PATH
     trainval_root = config.TRAINVAL_DATA_PATH
     test_root = config.TEST_DATA_PATH
     dns_root = config.DNS_DATA_PATH
-
-    # Verify that required directories exist
     for path in [pretrain_root, trainval_root, test_root, dns_root]:
         if not os.path.isdir(path):
             raise FileNotFoundError(f"Required directory not found: {path}")
@@ -58,10 +47,10 @@ def train():
         fixed_frames=config.fixed_frames,
         upsampled_sample_rate=config.upsampled_sample_rate
     )
-    data_module.setup()
+    data_module.setup(stage="test")
+    print("Data module setup complete.")
 
-    # Instantiate the new integrated model.
-    # (Adjust the hyperparameters as needed or use your config.)
+    # Instantiate the new integrated model (must match training configuration)
     transformer_model_instance = AVTransformer(
         densetcn_options=config.densetcn_options,
         allow_size_mismatch=config.allow_size_mismatch,
@@ -80,7 +69,7 @@ def train():
         resample=3.2,
         growth=2,
         max_hidden=10000,
-        normalize=False,  # Use dataset normalization
+        normalize=False,  # use dataset normalization
         glu=True,
         floor=1e-3,
         video_chin=512,
@@ -92,46 +81,45 @@ def train():
         transformer_ff_dim=532,
         max_seq_length=1024
     )
+    print("Transformer model instance initialized.")
 
-    model = AVTransformerLightningModule(net=transformer_model_instance, learning_rate=5e-5)
-
-    early_stopping_callback = EarlyStopping(
-        monitor='val_loss',
-        patience=5,
-        mode='min'
+    # Load best checkpoint (using config.checkpoint or get_latest_checkpoint)
+    best_checkpoint_path = config.checkpoint
+    model = AVTransformerLightningModule.load_from_checkpoint(
+        checkpoint_path=best_checkpoint_path,
+        net=transformer_model_instance,
+        learning_rate=1e-5
     )
-
-    checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',
-        dirpath=config.root_checkpoint,
-        save_top_k=-1,
-        mode='min',
-        filename='checkpoint_{epoch:02d}-{val_loss:.3f}',
-        auto_insert_metric_name=True
-    )
-
-    csv_logger = CSVLogger(save_dir=config.log_folder)
+    model.eval()
+    model.freeze()
+    print("Checkpoint loaded to model.")
 
     trainer = pl.Trainer(
-        max_epochs=config.max_epochs,
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=1, #config.gpus,
-        callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=100,
-        logger=csv_logger
+        devices=1,
+        log_every_n_steps=1
     )
+    print("Starting testing...")
+    test_results = trainer.test(model=model, datamodule=data_module)
+    print("Testing complete!")
+    print(f"Test Results: {test_results}")
 
-    if latest_checkpoint:
-        print(f"Resuming from checkpoint: {latest_checkpoint}")
-        trainer.fit(model, datamodule=data_module, ckpt_path=latest_checkpoint)
-    else:
-        print("Starting new training run:")
-        trainer.fit(model, datamodule=data_module)
-
-    print("Training complete!")
-    print(f"Best checkpoint saved at: {checkpoint_callback.best_model_path}")
-    config.checkpoint = checkpoint_callback.best_model_path
+    # Optionally, save enhanced audio from one test batch.
+    test_loader = data_module.test_dataloader()
+    test_iter = iter(test_loader)
+    test_batch = next(test_iter)
+    preprocessed_audio = test_batch['encoded_audio'].to(model.device)
+    preprocessed_video = test_batch['encoded_video'].to(model.device)
+    with torch.no_grad():
+        clean_audio = model(preprocessed_audio, preprocessed_video)
+    # Expected shape: [B, 1, time]; squeeze channel and concatenate along time.
+    clean_audio_np = clean_audio.cpu().numpy()
+    clean_audio_np = np.squeeze(clean_audio_np, axis=1)
+    concatenated_audio = np.concatenate(clean_audio_np, axis=-1)
+    model_output_path = "clean_audio_long.wav"
+    torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
+    print(f"Enhanced clean audio saved to '{model_output_path}'")
 
 
 if __name__ == "__main__":
-    train()
+    test()

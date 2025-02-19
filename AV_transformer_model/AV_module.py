@@ -6,6 +6,9 @@ from torchmetrics import MeanMetric, MinMetric, SignalDistortionRatio
 import logging
 import os
 import glob
+import numpy as np
+from pystoi import stoi
+import config
 
 # Configure logging
 logging.basicConfig(level=logging.WARNING)
@@ -16,7 +19,6 @@ def get_latest_checkpoint(checkpoint_dir):
     """Use latest saved checkpoint to resume training."""
     checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "*.ckpt")), key=os.path.getmtime, reverse=True)
     return checkpoints[0] if checkpoints else None
-
 
 class AVTransformerLightningModule(pl.LightningModule):
     def __init__(self, net: nn.Module, learning_rate: float = 1e-5,
@@ -43,6 +45,8 @@ class AVTransformerLightningModule(pl.LightningModule):
         self.val_loss_metric = MeanMetric()
         self.test_loss_metric = MeanMetric()
         self.val_loss_best = MinMetric()
+        self.test_sdr_metric = SignalDistortionRatio()
+        self.test_stoi_values = []
         # Optional: signal distortion ratio metric (or any other audio metric)
         self.sdr = SignalDistortionRatio()
 
@@ -89,7 +93,7 @@ class AVTransformerLightningModule(pl.LightningModule):
         loss, _, _ = self.step(batch)
         self.train_loss_metric.update(loss)
         batch_size = encoded_audio.shape[0]
-        self.log("train/loss", self.train_loss_metric, on_step=True, on_epoch=True, prog_bar=True,
+        self.log("train_loss", self.train_loss_metric, on_step=True, on_epoch=True, prog_bar=True,
                  batch_size=batch_size)
         return loss
 
@@ -97,7 +101,7 @@ class AVTransformerLightningModule(pl.LightningModule):
         loss, _, _ = self.step(batch)
         self.val_loss_metric.update(loss)
         batch_size = batch['encoded_audio'].shape[0]
-        self.log("val/loss", self.val_loss_metric, on_step=False, on_epoch=True, prog_bar=True,
+        self.log("val_loss", self.val_loss_metric, on_step=False, on_epoch=True, prog_bar=True,
                  batch_size=batch_size)
         logger.info(f"Validation Step {batch_idx}: val_loss = {loss.item()}")
         return loss
@@ -106,9 +110,25 @@ class AVTransformerLightningModule(pl.LightningModule):
         loss, predictions, targets = self.step(batch)
         self.test_loss_metric.update(loss)
         batch_size = batch['encoded_audio'].shape[0]
-        self.log("test/loss", self.test_loss_metric, on_step=False, on_epoch=True, prog_bar=True,
+        self.log("test_loss", self.test_loss_metric, on_step=False, on_epoch=True, prog_bar=True,
                  batch_size=batch_size)
-        return loss
+
+        # Assume predictions and targets are [B, 1, time]. Squeeze the channel dimension.
+        pred_audio = predictions.squeeze(1)
+        target_audio = targets.squeeze(1)
+
+        # Compute SDR.
+        sdr_val = self.test_sdr_metric(pred_audio, target_audio)
+        self.log("test_SDR", sdr_val, on_epoch=True, prog_bar=True)
+
+        # Compute STOI for each sample.
+        for pred, target in zip(pred_audio, target_audio):
+            pred_np = pred.cpu().float().numpy().astype(np.float64).flatten()
+            target_np = target.cpu().float().numpy().astype(np.float64).flatten()
+            stoi_val = stoi(target_np, pred_np, config.sample_rate, extended=False)
+            self.test_stoi_values.append(stoi_val)
+
+        return {"loss": loss, "SDR": sdr_val}
 
     def configure_optimizers(self):
         optimizer = self.hparams.optimizer_class(self.parameters(),
@@ -122,7 +142,7 @@ class AVTransformerLightningModule(pl.LightningModule):
             'optimizer': optimizer,
             'lr_scheduler': {
                 'scheduler': scheduler,
-                'monitor': 'val/loss',
+                'monitor': 'val_loss',
                 'interval': 'epoch',
                 'frequency': 1,
             }
@@ -139,5 +159,10 @@ class AVTransformerLightningModule(pl.LightningModule):
         self.val_loss_metric.reset()
 
     def on_test_epoch_end(self):
+        avg_stoi = np.mean(self.test_stoi_values) if self.test_stoi_values else 0.0
         logger.info(f"Test epoch ended. Test loss: {self.test_loss_metric.compute().item()}")
+        logger.info(f"Test Metrics - SDR: {self.test_sdr_metric.compute().item():.2f} dB, STOI: {avg_stoi:.2f}")
+        self.log("test_STOI", avg_stoi)
         self.test_loss_metric.reset()
+        self.test_sdr_metric.reset()
+        self.test_stoi_values = []

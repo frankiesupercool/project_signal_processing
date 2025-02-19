@@ -52,7 +52,7 @@ def run_inference():
     print("New model instance initialized.")
 
     # Path to the best checkpoint.
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=02-val_loss=0.000.ckpt")
+    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=43-val_loss=0.000.ckpt")
 
     # Load the Lightning module from checkpoint.
     model = AVTransformerLightningModule.load_from_checkpoint(
