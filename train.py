@@ -115,7 +115,7 @@ def train():
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=1, #config.gpus,
+        devices=config.gpus,
         callbacks=[early_stopping_callback, checkpoint_callback],
         log_every_n_steps=100,
         logger=csv_logger

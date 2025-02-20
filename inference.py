@@ -39,7 +39,7 @@ def run_inference():
 
     print("Transformer init done")
 
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "best-checkpoint.ckpt")
+    best_checkpoint_path = config.checkpoint
 
     model = AudioVideoTransformer.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
