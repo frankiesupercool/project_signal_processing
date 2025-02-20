@@ -1,7 +1,7 @@
 .venv/*
 .idea/*
 .data/*
-video_encoding/lrw_resnet18_dctcn_video_boundary.pth
+lrw_resnet18_dctcn_video_boundary.pth
 /data
 __pycache__/
 *.pyc

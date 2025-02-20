@@ -72,7 +72,7 @@ def train():
         denoiser_decoder=denoiser_decoder
     )
 
-    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=5e-5)
+    model = AudioVideoTransformer(model=transformer_model_instance, learning_rate=3e-5)
 
     early_stopping_callback = EarlyStopping(
         monitor='val_loss',  # name of the logged validation metric to monitor
@@ -111,21 +111,6 @@ def train():
     print("Training complete!")
     print(f"Best checkpoint saved at: {checkpoint_callback.best_model_path}")
     config.checkpoint = checkpoint_callback.best_model_path
-
-    import pandas as pd
-    import matplotlib.pyplot as plt
-
-    log_dir = os.path.join(config.log_folder, "version_0", "metrics.csv")  # Adjust path if needed
-    df = pd.read_csv(log_dir)
-
-    plt.figure(figsize=(10, 5))
-    plt.plot(df["epoch"], df["train_loss"], label="Train Loss")
-    plt.plot(df["epoch"], df["val_loss"], label="Validation Loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.title("Training & Validation Loss Over Time")
-    plt.show()
 
 
 if __name__ == "__main__":

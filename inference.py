@@ -38,7 +38,7 @@ def run_inference():
 
     print("Transformer init done")
 
-    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=53-val_loss=0.046.ckpt")
+    best_checkpoint_path = os.path.join(config.root_checkpoint, "checkpoint_epoch=18-val_loss=0.060.ckpt")
 
     model = AudioVideoTransformer.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
@@ -87,7 +87,7 @@ def run_inference():
     # save enhanced audio
     clean_audio = clean_audio.cpu().numpy()
     concatenated_audio = np.concatenate(clean_audio, axis=-1)
-    model_output_path = "clean_audio_long.wav"
+    model_output_path = "predicted_audio_files/clean_audio_long.wav"
     torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Enhanced clean audio saved to '{model_output_path}'")
 
@@ -96,7 +96,7 @@ def run_inference():
     clean_speech = np.squeeze(clean_speech, axis=1)  # remove extra dimension
     concatenated_clean_speech = np.concatenate(clean_speech, axis=-1).astype(np.float32)
     clean_speech_tensor = torch.tensor(concatenated_clean_speech)
-    ground_truth_path = "ground_truth_clean_speech.wav"
+    ground_truth_path = "predicted_audio_files/ground_truth_clean_speech.wav"
     torchaudio.save(ground_truth_path, clean_speech_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Ground truth clean speech saved to '{ground_truth_path}'")
 
@@ -105,32 +105,37 @@ def run_inference():
     preprocessed_audio_np = np.squeeze(preprocessed_audio_np, axis=1)  # remove extra dimension
     concatenated_preprocessed_audio = np.concatenate(preprocessed_audio_np, axis=-1).astype(np.float32)
     preprocessed_audio_tensor = torch.tensor(concatenated_preprocessed_audio)
-    preprocessed_audio_path = "preprocessed_audio_long.wav"
+    preprocessed_audio_path = "predicted_audio_files/preprocessed_audio_long.wav"
     torchaudio.save(preprocessed_audio_path, preprocessed_audio_tensor.unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Preprocessed audio saved to '{preprocessed_audio_path}'")
 
     import matplotlib.pyplot as plt
 
-    # Visualize the predicted clean audio
+    # Visualize the predicted clean audio and save
     plt.figure(figsize=(10, 4))
     plt.plot(concatenated_audio, label="Predicted Clean Audio", color="blue")
     plt.xlabel("Time (samples)")
     plt.ylabel("Amplitude")
     plt.title("Predicted Clean Audio (Inference)")
     plt.legend()
-    plt.show()
+    predicted_audio_plot_path = os.path.join(config.plot_folder, "predicted_clean_audio.png")
+    plt.savefig(predicted_audio_plot_path, dpi=300, bbox_inches="tight")
+    print(f"Predicted clean audio plot saved to '{predicted_audio_plot_path}'")
+    plt.close()
 
-    # Visualize the ground truth clean audio
+    # Visualize the ground truth clean audio and save
     plt.figure(figsize=(10, 4))
     plt.plot(concatenated_clean_speech, label="Ground Truth Clean Audio", color="green")
     plt.xlabel("Time (samples)")
     plt.ylabel("Amplitude")
     plt.title("Ground Truth Clean Audio (Inference)")
     plt.legend()
-    plt.show()
+    ground_truth_plot_path = os.path.join(config.plot_folder, "ground_truth_clean_audio.png")
+    plt.savefig(ground_truth_plot_path, dpi=300, bbox_inches="tight")
+    print(f"Ground truth clean audio plot saved to '{ground_truth_plot_path}'")
+    plt.close()
 
-    print("Inference complete!")
-
+    print("Plots saved successfully!")
 
 if __name__ == "__main__":
     run_inference()

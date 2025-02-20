@@ -153,15 +153,15 @@ class TransformerModel(nn.Module):
         return encoded_video
 
     def _initialize_weights(self):
+        # Only initialize weights for trainable modules that are not marked as pretrained.
         for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)  # Better for deep networks
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
-            elif isinstance(m, nn.TransformerEncoderLayer):
+            if hasattr(m, 'pretrained') and m.pretrained:
+                continue
+            if isinstance(m, nn.TransformerEncoderLayer):
                 for param in m.parameters():
-                    if param.dim() > 1:  # Only for weight matrices
+                    if param.requires_grad and param.dim() > 1:
                         nn.init.xavier_uniform_(param)
+
     def forward(self, preprocessed_audio, preprocessed_video):
         """
         Args:
@@ -191,11 +191,11 @@ class TransformerModel(nn.Module):
         modality_audio_encoded = self.audio_modality_encoder(audio_proj)  # (batch_size, total_seq_len, embed_dim)
         modality_video_encoded = self.video_modality_encoder(video_proj)  # (batch_size, total_seq_len, embed_dim)
         # A + PE + ME
-        audio_input = audio_proj + positional_audio_encoding + modality_audio_encoded
+        audio_input = audio_proj + positional_audio_encoding #+ modality_audio_encoded
         # V + PE + ME
-        video_input = video_proj + positional_video_encoding + modality_video_encoded
+        video_input = video_proj + positional_video_encoding #+ modality_video_encoded
         # concatenate along the temporal dimension
-        combined = torch.cat([audio_input, video_input], dim=1)
+        combined = torch.cat([audio_input, video_input], dim=0)
         # Transformer expects input as (seq_len, batch_size, embed_dim)
         transformer_input = combined.transpose(0, 1)  # (total_seq_len, batch_size, embed_dim)
         transformer_output = self.transformer_encoder(transformer_input)  # (total_seq_len, batch_size, embed_dim)

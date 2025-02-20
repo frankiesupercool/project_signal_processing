@@ -1,5 +1,13 @@
 #!/usr/bin/bash
 
+# note: download script copied and adjusted from DNS challenge
+# cite: @inproceedings{reddy2021interspeech,
+        #  title={INTERSPEECH 2021 Deep Noise Suppression Challenge},
+        #  author={Reddy, Chandan KA and Dubey, Harishchandra and Koishida, Kazuhito and Nair, Arun and Gopal, Vishak and Cutler, Ross and Braun, Sebastian and Gamper, Hannes and Aichner, Robert and Srinivasan, Sriram},
+        #  booktitle={INTERSPEECH},
+        #  year={2021}
+        #}
+
 # RUN WITHIN SCREEN!!
 
 # ***** 5th DNS Challenge at ICASSP 2023*****

@@ -19,9 +19,7 @@ class ModalityEncoder(nn.Module):
         # - The first dimension (1) is for a single modality.
         # - The second dimension (1) allows for sequence-wise broadcasting.
         # - The third dimension (embed_dim) is the embedding size.
-        self.modality_encoding = nn.Parameter(
-            torch.randn(1, 1, embed_dim), requires_grad=True
-        )
+        self.modality_encoding = nn.Parameter(torch.randn(1, 1, embed_dim) * 0.2, requires_grad=True)
 
     def forward(self, encoded_modality):
         """
@@ -35,4 +33,4 @@ class ModalityEncoder(nn.Module):
                           maintaining the same shape as the input.
         """
         # expand the modality encoding to match the input tensor's shape, add vector element-wise.
-        return encoded_modality + self.modality_encoding.expand_as(encoded_modality)
+        return self.modality_encoding.expand_as(encoded_modality)

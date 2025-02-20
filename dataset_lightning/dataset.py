@@ -2,14 +2,13 @@ import os
 import random
 import torch
 import torchaudio
-from requests.packages import target
 from torch.utils.data import Dataset
 import linecache  # Import linecache for reading specific lines from files
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
 
 class PreprocessingDataset(Dataset):
     def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames = 100):
+                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100, dataset_tag=None):
 
         """
         Args:
@@ -35,7 +34,8 @@ class PreprocessingDataset(Dataset):
 
 
         # Save paired file paths to a single text file
-        self.paired_files_list = 'paired_files.txt'
+        tag = dataset_tag if dataset_tag is not None else os.path.basename(os.path.normpath(lrs3_root))
+        self.paired_files_list = f'paired_files_{tag}.txt'
         self.dns_files_list = 'dns_files.txt'
 
         if not os.path.exists(self.paired_files_list):
@@ -142,6 +142,8 @@ class PreprocessingDataset(Dataset):
         Returns:
             torch.Tensor: Mixed waveform.
         """
+
+        snr_db = random.uniform(10, 35)
         # Calculate power of speech and interference
         speech_power = speech.norm(p=2).pow(2)
         interference_power = interference.norm(p=2).pow(2) + epsilon  # Prevent division by zero

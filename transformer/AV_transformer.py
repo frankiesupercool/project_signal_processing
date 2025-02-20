@@ -2,6 +2,8 @@ import pytorch_lightning as pl
 from torch import nn, optim
 import torch
 import logging
+import random
+
 
 # Configure logging
 logging.basicConfig(level=logging.WARNING)
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class AudioVideoTransformer(pl.LightningModule):
     def __init__(self, model, learning_rate=1e-5):
         super(AudioVideoTransformer, self).__init__()
+        self.p_clean = 0
         self.model = model
         self.learning_rate = learning_rate
         self.criterion = nn.L1Loss()  # L1Loss provides more variance in output than MSE
@@ -42,17 +45,20 @@ class AudioVideoTransformer(pl.LightningModule):
         if not torch.isfinite(encoded_audio).all():
             logger.warning(f"NaNs or Infs found in encoded_audio at batch {batch_idx}. Skipping batch.")
             self.skipped_batches += 1
-            return torch.tensor(0.0, requires_grad=True)  # Dummy loss
+            return None
         if not torch.isfinite(encoded_video).all():
             logger.warning(f"NaNs or Infs found in encoded_video at batch {batch_idx}. Skipping batch.")
             self.skipped_batches += 1
-            return torch.tensor(0.0, requires_grad=True)  # Dummy loss
+            return None
         if not torch.isfinite(clean_speech).all():
             logger.warning(f"NaNs or Infs found in clean_speech at batch {batch_idx}. Skipping batch.")
             self.skipped_batches += 1
-            return torch.tensor(0.0, requires_grad=True)  # Dummy loss
+            return None
 
         # Proceed with forward pass and loss computation
+        if clean_speech is not None and random.random() < self.p_clean:
+            encoded_audio = clean_speech
+
         predicted_clean = self(encoded_audio, encoded_video)
         loss = self.criterion(predicted_clean.unsqueeze(1), clean_speech)
 
@@ -159,10 +165,14 @@ class AudioVideoTransformer(pl.LightningModule):
         )
         return loss
 
+    #def configure_optimizers(self):
+    #    optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+    #    return optimizer
+
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0001)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.9, patience=1
+            optimizer, mode='min', factor=0.5, patience=3
         )
         return {
             'optimizer': optimizer,
@@ -173,6 +183,8 @@ class AudioVideoTransformer(pl.LightningModule):
                 'frequency': 1,
             }
         }
+
+
 
     def on_train_epoch_end(self):
         """

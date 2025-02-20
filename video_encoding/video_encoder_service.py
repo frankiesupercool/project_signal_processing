@@ -120,7 +120,7 @@ class VideoPreprocessingService(nn.Module):
 
         # -- load dictionary
         assert os.path.isfile(load_path), "Error when loading the model, provided path not found: {}".format(load_path)
-        checkpoint = torch.load(load_path, weights_only=True)
+        checkpoint = torch.load(load_path, weights_only=True, map_location=torch.device("cpu"))
         loaded_state_dict = checkpoint['model_state_dict']
 
         if allow_size_mismatch:

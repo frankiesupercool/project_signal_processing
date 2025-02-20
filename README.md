@@ -29,6 +29,7 @@ Pip shows error regarding omegaconf version but it works.
 
 - then start the necessary file
 
+- `conda install gdown` for lrw.pth download (video encoder model) 
 
 ## Development
 
