@@ -3,8 +3,8 @@ import torchaudio
 import os
 import config
 from denoiser import pretrained
-from transformer.AV_transformer import AudioVideoTransformer
-from transformer.transformer_model import TransformerModel
+from AV_transformer_model.AV_module import AVTransformerLightningModule
+from AV_transformer_model.AV_transformer import AVTransformer
 from dataset_lightning.lightning_datamodule import DataModule
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,9 +19,7 @@ def run_inference():
     audio_model = pretrained.dns64()
     denoiser_decoder = audio_model.decoder
 
-    transformer_model_instance = TransformerModel(
-        audio_dim=1024,
-        video_dim=512,
+    transformer_model_instance = AVTransformer(
         densetcn_options=config.densetcn_options,
         allow_size_mismatch=config.allow_size_mismatch,
         model_path=config.MODEL_PATH,
@@ -29,21 +27,36 @@ def run_inference():
         relu_type=config.relu_type,
         num_classes=config.num_classes,
         backbone_type=config.backbone_type,
+        chin=1,
+        chout=1,
+        hidden=48,
+        depth=5,
+        kernel_size=8,
+        stride=4,
+        padding=2,
+        resample=3.2,
+        growth=2,
+        max_hidden=10000,
+        normalize=False,  # use dataset normalization
+        glu=True,
+        floor=1e-3,
+        video_chin=512,
+        d_hid=532,
+        num_encoder_layers=3,
+        num_heads=8,
         embed_dim=768,
-        nhead=8,
-        num_layers=3,
-        dim_feedforward=532,
-        max_seq_length=1024,
-        denoiser_decoder=denoiser_decoder
+        transformer_layers=3,
+        transformer_ff_dim=532,
+        max_seq_length=1024
     )
 
     print("Transformer init done")
 
     best_checkpoint_path = config.checkpoint
 
-    model = AudioVideoTransformer.load_from_checkpoint(
+    model = AVTransformerLightningModule.load_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
-        model=transformer_model_instance,
+        net=transformer_model_instance,
         learning_rate=1e-5
     )
 
