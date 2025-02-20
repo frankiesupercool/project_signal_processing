@@ -102,7 +102,7 @@ def run_inference():
     clean_audio = clean_audio.cpu().numpy()
     concatenated_audio = np.concatenate(clean_audio, axis=-1)
     model_output_path = "clean_audio_long.wav"
-    torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
+    torchaudio.save(model_output_path, torch.tensor(concatenated_audio), sample_rate=config.sample_rate)
     print(f"Enhanced clean audio saved to '{model_output_path}'")
 
     # save ground Truth
