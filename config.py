@@ -49,3 +49,5 @@ max_epochs = 50
 root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
 checkpoint = "../../../../data/datasets/checkpoints/sp2025/checkpoint_epoch=24-val_loss=0.088.ckpt"
 log_folder = "../../../../data/datasets/checkpoints/sp2025"
+inference_root = "./inference_audio"
+plot_folder = "./plots"
