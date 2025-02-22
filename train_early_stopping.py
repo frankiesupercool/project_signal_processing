@@ -5,6 +5,7 @@ from pytorch_lightning.loggers import CSVLogger
 import os
 from denoiser import pretrained
 from dataset_lightning.lightning_datamodule import DataModule
+from evaluation.evaluation import evaluate
 from transformer.AV_transformer import AudioVideoTransformer
 from transformer.transformer_model import TransformerModel
 import config
@@ -110,6 +111,14 @@ def train():
     print("Training complete!")
     print(f"Best checkpoint saved at: {checkpoint_callback.best_model_path}")
     config.checkpoint = checkpoint_callback.best_model_path
+
+    # 8) Run evaluation
+    avg_pesq, avg_stoi, avg_sdr = evaluate(model, checkpoint_callback.best_model_path, data_module)
+
+    print("Evaluation complete!")
+    print(f"For the test dataset the average_pesq is: {avg_pesq}")
+    print(f"For the test dataset the average stoi is: {avg_stoi}")
+    print(f"For the test dataset the average sdr is: {avg_sdr}")
 
 
 if __name__ == "__main__":
