@@ -78,7 +78,7 @@ class DataModule(pl.LightningDataModule):
             'fixed_frames': self.fixed_frames
         }
 
-        if stage == 'fit' or stage is None:
+        if stage == 'train_val' or stage is None:
             # Instantiate the pretrain dataset (optional, based on your training strategy)
 
             self.pretrain_dataset = PreprocessingDataset(

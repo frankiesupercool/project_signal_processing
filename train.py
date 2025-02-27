@@ -1,27 +1,21 @@
-# train_av.py
-import pytorch_lightning as pl
-import torch
-from torch import nn, optim
-from torchmetrics import MeanMetric, MinMetric, SignalDistortionRatio
-import logging
+import glob
 import os
+import torch
+import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger
-import glob
-
-# Import your DataModule and new integrated model
-from dataset_lightning.lightning_datamodule import DataModule
-from AV_transformer_model.AV_transformer import AVTransformer
-from AV_transformer_model.AV_module import AVTransformerLightningModule
 import config
+from AV_transformer_model.AV_module import AVTransformerLightningModule
+from AV_transformer_model.AV_transformer import AVTransformer
+from dataset_lightning.lightning_datamodule import DataModule
 
-# Configure logging
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger(__name__)
 
-
-def get_latest_checkpoint(checkpoint_dir):
-    """Use latest saved checkpoint to resume training."""
+def get_latest_checkpoint():
+    """
+    Checks for saved checkpoints.
+    :return: Latest saved checkpoint
+    """
+    checkpoint_dir = config.root_checkpoint
     checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "*.ckpt")), key=os.path.getmtime, reverse=True)
     return checkpoints[0] if checkpoints else None
 
@@ -29,20 +23,28 @@ def get_latest_checkpoint(checkpoint_dir):
 def train():
     """
     Training script with early stopping and checkpointing.
+    Resumes training from a checkpoint if provided.
     """
-    latest_checkpoint = get_latest_checkpoint(config.root_checkpoint)
+    print("Initializing training setup...")
 
-    # Define dataset paths from config
+    # Setup pytorch lightning logger
+    csv_logger = CSVLogger(save_dir=config.log_folder)
+
+    # Get latest saved checkpoint to resume training
+    latest_checkpoint = get_latest_checkpoint()
+
+    # Get dataset paths from config
     pretrain_root = config.PRETRAIN_DATA_PATH
     trainval_root = config.TRAINVAL_DATA_PATH
     test_root = config.TEST_DATA_PATH
     dns_root = config.DNS_DATA_PATH
 
-    # Verify that required directories exist
+    # Verify required directories exist
     for path in [pretrain_root, trainval_root, test_root, dns_root]:
         if not os.path.isdir(path):
-            raise FileNotFoundError(f"Required directory not found: {path}")
+            raise FileNotFoundError(f"Required data directory not found: {path}")
 
+    # Setup training data module
     data_module = DataModule(
         pretrain_root=pretrain_root,
         trainval_root=trainval_root,
@@ -58,10 +60,9 @@ def train():
         fixed_frames=config.fixed_frames,
         upsampled_sample_rate=config.upsampled_sample_rate
     )
-    data_module.setup()
+    data_module.setup('train_val')
 
-    # Instantiate the new integrated model.
-    # (Adjust the hyperparameters as needed or use your config.)
+    # Transformer init
     transformer_model_instance = AVTransformer(
         densetcn_options=config.densetcn_options,
         allow_size_mismatch=config.allow_size_mismatch,
@@ -93,8 +94,9 @@ def train():
         max_seq_length=1024
     )
 
-    model = AVTransformerLightningModule(net=transformer_model_instance, learning_rate=5e-5)
+    model = AVTransformerLightningModule(model=transformer_model_instance, learning_rate=5e-5)
 
+    # Early stopping after 5 unimproved validation losses
     early_stopping_callback = EarlyStopping(
         monitor='val_loss',
         patience=5,
@@ -110,8 +112,6 @@ def train():
         auto_insert_metric_name=True
     )
 
-    csv_logger = CSVLogger(save_dir=config.log_folder)
-
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
@@ -121,6 +121,7 @@ def train():
         logger=csv_logger
     )
 
+    # Start training
     if latest_checkpoint:
         print(f"Resuming from checkpoint: {latest_checkpoint}")
         trainer.fit(model, datamodule=data_module, ckpt_path=latest_checkpoint)

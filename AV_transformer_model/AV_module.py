@@ -1,85 +1,80 @@
-# train_av.py
-import pytorch_lightning as pl
+import logging
+import numpy as np
 import torch
 from torch import nn, optim
 from torchmetrics import MeanMetric, MinMetric, SignalDistortionRatio
-import logging
-import os
-import glob
-import numpy as np
+import pytorch_lightning as pl
 from pystoi import stoi
 import config
 
-# Configure logging
+# Setup logger
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-def get_latest_checkpoint(checkpoint_dir):
-    """Use latest saved checkpoint to resume training."""
-    checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "*.ckpt")), key=os.path.getmtime, reverse=True)
-    return checkpoints[0] if checkpoints else None
-
 class AVTransformerLightningModule(pl.LightningModule):
-    def __init__(self, net: nn.Module, learning_rate: float = 1e-5,
-                 optimizer_class=optim.Adam,
-                 scheduler_class=torch.optim.lr_scheduler.ReduceLROnPlateau):
+    def __init__(self, model: nn.Module, learning_rate: float = 5e-5):
         """
-        LightningModule that wraps the VoiceFormer model.
 
-        Args:
-            net (nn.Module): The audio–video fusion model.
-            learning_rate (float): Learning rate.
-            optimizer_class: Optimizer class (default: Adam).
-            scheduler_class: LR scheduler class (default: ReduceLROnPlateau).
+        :param model: The AV transformer model
+        :param learning_rate: Learning rate (default is 5e-5)
         """
         super().__init__()
-        # Save hyperparameters (excluding the network itself)
-        self.save_hyperparameters(ignore=["net"])
-        self.net = net
+        # Save hyperparameters excluding the model itself
+        self.save_hyperparameters(ignore=["model"])
+        self.model = model
         self.learning_rate = learning_rate
-        self.criterion = nn.L1Loss()  # L1Loss as in the original VoiceFormer
+        self.criterion = nn.L1Loss()  # L1Loss as in paper
 
-        # Metrics (using torchmetrics)
+        # Metrics init
         self.train_loss_metric = MeanMetric()
         self.val_loss_metric = MeanMetric()
         self.test_loss_metric = MeanMetric()
         self.val_loss_best = MinMetric()
         self.test_sdr_metric = SignalDistortionRatio()
         self.test_stoi_values = []
-        # Optional: signal distortion ratio metric (or any other audio metric)
         self.sdr = SignalDistortionRatio()
 
     def forward(self, encoded_audio, encoded_video):
         """
-        Forward pass through the underlying model.
-        Expects:
-          - encoded_audio: Tensor of shape [batch, 1, time]
-          - encoded_video: Tensor of shape [batch, video_seq, video_feature_dim]
-        Returns:
-          - predicted_clean: Tensor of shape [batch, waveform_length]
+        Forward pass through the model.
+        :param encoded_audio: Tensor of shape [batch, 1, time]
+        :param encoded_video: Tensor of shape [batch, video_seq, video_feature_dim]
+        :return: Predicted clean audio as tensor of shape [batch, waveform_length]
         """
-        return self.net(encoded_audio, encoded_video)
+        return self.model(encoded_audio, encoded_video)
 
     def step(self, batch):
         """
-        Common step for train/validation/test.
-        Expects batch to be a dictionary with keys:
-            'encoded_audio', 'encoded_video', 'clean_speech'
+        Common step for train/validation/test phases.
+        :param batch: Dictionary with keys: 'encoded_audio', 'encoded_video', 'clean_speech'
+        :return:
+            loss: step loss
+            prediction: predicted clean audio
+            clean_speech: original clean speech audio
         """
+
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
-        # Forward pass through the model
-        predictions = self(encoded_audio, encoded_video)
-        loss = self.criterion(predictions, clean_speech)
-        return loss, predictions, clean_speech
+        # Calls forward pass through the model
+        prediction = self(encoded_audio, encoded_video)
+        loss = self.criterion(prediction, clean_speech)
+        return loss, prediction, clean_speech
 
     def training_step(self, batch, batch_idx):
-        # Check for NaNs/Infs (optional)
+        """
+        Training step, checks first for NaNs/Infs in batch and sets them to 0.0
+        Calls step, logs loss
+        :param batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
+        :param batch_idx: Index of current batch
+        :return: Traning step loss of current batch
+        """
+
         encoded_audio = batch['encoded_audio']
         encoded_video = batch['encoded_video']
         clean_speech = batch['clean_speech']
+
         if not torch.isfinite(encoded_audio).all():
             logger.warning(f"NaNs/Infs in encoded_audio at training batch {batch_idx}.")
             return torch.tensor(0.0, requires_grad=True)
@@ -98,6 +93,12 @@ class AVTransformerLightningModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
+        """
+        Validation step calls step, logs loss
+        :param batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
+        :param batch_idx: Index of current batch
+        :return: Validation step loss of current batch
+        """
         loss, _, _ = self.step(batch)
         self.val_loss_metric.update(loss)
         batch_size = batch['encoded_audio'].shape[0]
@@ -107,21 +108,27 @@ class AVTransformerLightningModule(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
+        """
+        Test step calls step, logs loss and computes SDR and STOI metrics
+        :param batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
+        :param batch_idx: Index of current batch
+        :return: Test step loss of current batch and
+        """
         loss, predictions, targets = self.step(batch)
         self.test_loss_metric.update(loss)
         batch_size = batch['encoded_audio'].shape[0]
         self.log("test_loss", self.test_loss_metric, on_step=False, on_epoch=True, prog_bar=True,
                  batch_size=batch_size)
 
-        # Assume predictions and targets are [B, 1, time]. Squeeze the channel dimension.
+        # [batch size, 1, time] - squeeze the channel dimension
         pred_audio = predictions.squeeze(1)
         target_audio = targets.squeeze(1)
 
-        # Compute SDR.
+        # SDR
         sdr_val = self.test_sdr_metric(pred_audio, target_audio)
         self.log("test_SDR", sdr_val, on_epoch=True, prog_bar=True)
 
-        # Compute STOI for each sample.
+        # STOI for each sample
         for pred, target in zip(pred_audio, target_audio):
             pred_np = pred.cpu().float().numpy().astype(np.float64).flatten()
             target_np = target.cpu().float().numpy().astype(np.float64).flatten()
@@ -131,13 +138,23 @@ class AVTransformerLightningModule(pl.LightningModule):
         return {"loss": loss, "SDR": sdr_val}
 
     def configure_optimizers(self):
-        optimizer = self.hparams.optimizer_class(self.parameters(),
-                                                   lr=self.learning_rate,
-                                                   weight_decay=0.0001)
-        scheduler = self.hparams.scheduler_class(optimizer,
-                                                 mode='min',
-                                                 factor=0.9,
-                                                 patience=1)
+        """
+        Sets up an Adam optimizer with weight decay and a ReduceLROnPlateau scheduler to adjust the learning rate
+        based on validation loss.
+        Reacts quick to being stuck on optima by decreasing learning rate by 10% (factor 0.9)
+        after no improvement of 1 epoch (patience 1).
+
+        :return: Dictionary of optimizer and learning rate scheduler configuration.
+        optimizer: The Adam optimizer, weight decay: 0.0001
+        lr_scheduler:
+            - scheduler: Defined scheduler
+            - monitor: Metric to monitor (val_loss)
+            - interval: Interval for updating (epoch)
+            - frequency: Frequency of update (every epoch)
+        """
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0001)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=1)
+
         return {
             'optimizer': optimizer,
             'lr_scheduler': {
@@ -155,7 +172,8 @@ class AVTransformerLightningModule(pl.LightningModule):
     def on_validation_epoch_end(self):
         val_loss = self.val_loss_metric.compute()
         self.val_loss_best.update(val_loss)
-        logger.info(f"Validation epoch ended. Val loss: {val_loss.item()} | Best val loss: {self.val_loss_best.compute().item()}")
+        logger.info(
+            f"Validation epoch ended. Val loss: {val_loss.item()} | Best val loss: {self.val_loss_best.compute().item()}")
         self.val_loss_metric.reset()
 
     def on_test_epoch_end(self):
