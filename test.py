@@ -8,6 +8,7 @@ from dataset_lightning.lightning_datamodule import DataModule
 from AV_transformer_model.AV_transformer import AVTransformer
 from AV_transformer_model.AV_module import AVTransformerLightningModule
 import config
+from pesq import pesq  # Added for PESQ metric computation
 
 
 def get_latest_checkpoint(checkpoint_dir):
@@ -115,6 +116,22 @@ def test():
     # Expected shape: [B, 1, time]; squeeze channel and concatenate along time.
     clean_audio_np = clean_audio.cpu().numpy()
     clean_audio_np = np.squeeze(clean_audio_np, axis=1)
+
+    # PESQ metric
+    if 'clean_speech' in test_batch:
+        reference_audio = test_batch['clean_speech'].to(model.device)
+        reference_audio_np = reference_audio.cpu().numpy().squeeze(1)
+        pesq_scores = []
+        # PESQ for each sample in the batch
+        for ref, deg in zip(reference_audio_np, clean_audio_np):
+            # ensure signals are in the range [-1, 1] and use wideband mode ('wb')
+            score = pesq(config.sample_rate, ref, deg, 'wb')
+            pesq_scores.append(score)
+        avg_pesq = np.mean(pesq_scores)
+        print(f"Average PESQ Score: {avg_pesq}")
+    else:
+        print("No clean audio, skipping PESQ computation.")
+
     concatenated_audio = np.concatenate(clean_audio_np, axis=-1)
     model_output_path = "clean_audio_long.wav"
     torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
@@ -123,3 +140,4 @@ def test():
 
 if __name__ == "__main__":
     test()
+    
