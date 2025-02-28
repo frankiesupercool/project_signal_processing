@@ -15,7 +15,7 @@ class VideoPreprocessingService(nn.Module):
 
     def __init__(self,
                  allow_size_mismatch: bool,
-                 model_path: str,
+                 lip_reading_model_path: str,
                  use_boundary: bool,
                  relu_type: str,
                  num_classes: int,
@@ -27,7 +27,7 @@ class VideoPreprocessingService(nn.Module):
 
         Args:
             allow_size_mismatch (bool):
-            model_path (str): Path to the model file that will be loaded.
+            lip_reading_model_path (str): Path to the model file that will be loaded.
             use_boundary (bool):
             relu_type (str):
             num_classes (int):
@@ -36,7 +36,7 @@ class VideoPreprocessingService(nn.Module):
         """
         super(VideoPreprocessingService, self).__init__()
         self.allow_size_mismatch = allow_size_mismatch
-        self.model_path = model_path
+        self.model_path = lip_reading_model_path
         self.use_boundary = use_boundary
         self.relu_type = relu_type
         self.num_classes = num_classes

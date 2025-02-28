@@ -7,8 +7,8 @@ import config
 Plots train / val loss from lightning logs
 """
 
-plot_path = os.path.join(config.plot_folder, "loss_plot_epochs.png")
-log_dir = os.path.join(config.log_folder, "lightning_logs")
+plot_path = os.path.join(config.PLOT_ROOT, "loss_plot_epochs.png")
+log_dir = os.path.join(config.LOG_FOLDER, "lightning_logs")
 log_dir = os.path.join(log_dir, "version_0", "metrics.csv")
 df = pd.read_csv(log_dir)
 

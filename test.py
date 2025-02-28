@@ -52,7 +52,7 @@ def test():
     transformer_model_instance = AVTransformer(
         densetcn_options=config.densetcn_options,
         allow_size_mismatch=config.allow_size_mismatch,
-        model_path=config.MODEL_PATH,
+        lip_reading_model_path=config.LR_MODEL_PATH,
         use_boundary=config.use_boundary,
         relu_type=config.relu_type,
         num_classes=config.num_classes,
@@ -95,7 +95,7 @@ def test():
     # [batch size, 1, time] - squeeze channel and concatenate the predictions along time.
     clean_audio = np.squeeze(clean_audio, axis=1)
     concatenated_audio = np.concatenate(clean_audio, axis=-1)
-    model_output_path = os.path.join(config.inference_root, "clean_audio_from_test_phase.wav")
+    model_output_path = os.path.join(config.INFERENCE_ROOT, "clean_audio_from_test_phase.wav")
     torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Predicted clean audio saved to '{model_output_path}'")
 

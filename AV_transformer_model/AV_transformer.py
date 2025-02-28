@@ -93,7 +93,7 @@ class AVTransformer(nn.Module):
                  use_boundary,
                  relu_type,
                  num_classes,
-                 model_path,
+                 lip_reading_model_path,
                  # U-Net denoiser params
                  chin=1,
                  chout=1,
@@ -115,7 +115,7 @@ class AVTransformer(nn.Module):
         # Initialise video preprocessing
         self.lipreading_preprocessing = VideoPreprocessingService(
             allow_size_mismatch=allow_size_mismatch,
-            model_path=model_path,
+            lip_reading_model_path=lip_reading_model_path,
             use_boundary=use_boundary,
             relu_type=relu_type,
             num_classes=num_classes,

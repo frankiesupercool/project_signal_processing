@@ -27,7 +27,7 @@ densetcn_options = {
 
 # video model and processing configurations
 allow_size_mismatch = True
-MODEL_PATH = './video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
+LR_MODEL_PATH = './video_encoding/lrw_resnet18_dctcn_video_boundary.pth'
 use_boundary = False
 relu_type = "swish"
 num_classes = 500
@@ -45,8 +45,11 @@ gpus = [0]
 max_epochs = 50
 
 # root checkpoint save - public available checkpoints folder on sppc25
-root_checkpoint = "../../../../data/datasets/checkpoints/sp2025"
+ROOT_CHECKPOINT = "../../../../data/datasets/checkpoints/sp2025"
+# will be set in training to best checkpoint
 checkpoint = "../../../../data/datasets/checkpoints/sp2025/checkpoint_epoch=24-val_loss=0.088.ckpt"
-log_folder = "../../../../data/datasets/checkpoints/sp2025"
-inference_root = "./inference_audio"
-plot_folder = "./plots"
+# checkpoint = "./checkpoint/checkpoint_epoch=24-val_loss=0.088.ckpt"
+LOG_FOLDER = "../../../../data/datasets/checkpoints/sp2025"
+
+INFERENCE_ROOT = "./inference_audio"
+PLOT_ROOT = "./plots"

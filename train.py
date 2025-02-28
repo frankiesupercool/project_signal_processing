@@ -15,7 +15,7 @@ def get_latest_checkpoint():
     Checks for saved checkpoints.
     :return: Latest saved checkpoint
     """
-    checkpoint_dir = config.root_checkpoint
+    checkpoint_dir = config.ROOT_CHECKPOINT
     checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "*.ckpt")), key=os.path.getmtime, reverse=True)
     return checkpoints[0] if checkpoints else None
 
@@ -28,7 +28,7 @@ def train():
     print("Initializing training setup...")
 
     # Setup pytorch lightning logger
-    csv_logger = CSVLogger(save_dir=config.log_folder)
+    csv_logger = CSVLogger(save_dir=config.LOG_FOLDER)
 
     # Get latest saved checkpoint to resume training
     latest_checkpoint = get_latest_checkpoint()
@@ -64,7 +64,7 @@ def train():
     transformer_model_instance = AVTransformer(
         densetcn_options=config.densetcn_options,
         allow_size_mismatch=config.allow_size_mismatch,
-        model_path=config.MODEL_PATH,
+        lip_reading_model_path=config.LR_MODEL_PATH,
         use_boundary=config.use_boundary,
         relu_type=config.relu_type,
         num_classes=config.num_classes,
@@ -87,7 +87,7 @@ def train():
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
-        dirpath=config.root_checkpoint,
+        dirpath=config.ROOT_CHECKPOINT,
         save_top_k=-1,
         mode='min',
         filename='checkpoint_{epoch:02d}-{val_loss:.3f}',

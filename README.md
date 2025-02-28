@@ -49,6 +49,8 @@ We provide our best checkpoint in the checkpoint folder.
 Due to its large size we uploaded it via Git LFS.
 
 To download our best checkpoint checkout this repository, install `git lfs install` and pull from LFS `git lfs pull`.
+For usage the downloaded checkpoint must either be put to the expected folder from [config.py](config.py) or the path in
+config.py must be changed to the checkpoint location.
 
 ## References
 
