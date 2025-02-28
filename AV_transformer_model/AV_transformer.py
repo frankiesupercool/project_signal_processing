@@ -104,7 +104,9 @@ class AVTransformer(nn.Module):
                  # additional params
                  video_preprocessing_dim=512,
                  embed_dim=768,  # projection dimension for transformer
-                 max_seq_length=1024):
+                 max_seq_length=1024,
+                 orig_sample_rate=16000,
+                 upsampled_sample_rate=51200):
         super().__init__()
 
         # Initialise video preprocessing
@@ -145,8 +147,8 @@ class AVTransformer(nn.Module):
             hidden = min(int(growth * hidden), max_hidden)
 
         # Resampling layers
-        self.upsample = torchaudio.transforms.Resample(orig_freq=16000, new_freq=51200)
-        self.downsample = torchaudio.transforms.Resample(orig_freq=51200, new_freq=16000)
+        self.upsample = torchaudio.transforms.Resample(orig_freq=orig_sample_rate, new_freq=upsampled_sample_rate)
+        self.downsample = torchaudio.transforms.Resample(orig_freq=upsampled_sample_rate, new_freq=orig_sample_rate)
 
         # Audio projection layer - project last encoder layer to embedding dim
         self.audio_proj = nn.Linear(chin, embed_dim)

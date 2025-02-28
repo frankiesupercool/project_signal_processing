@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader, random_split
 from dataset_lightning.dataset import PreprocessingDataset
 import config
 
+
 class DataModule(pl.LightningDataModule):
     def __init__(
             self,
@@ -11,14 +12,12 @@ class DataModule(pl.LightningDataModule):
             test_root,
             dns_root,
             snr_db=config.snr_db,
-            transform=None,
             sample_rate=16000,
-            mode_prob={'speaker': 0.5, 'noise': 0.5},
+            mode_prob=None,
             batch_size=config.batch_size,
             num_workers=config.num_workers,
             fixed_length=config.fixed_length,
             fixed_frames=config.fixed_frames,
-            upsampled_sample_rate=config.upsampled_sample_rate
     ):
         """
         PyTorch Lightning DataModule for PreprocessingDataset.
@@ -29,40 +28,36 @@ class DataModule(pl.LightningDataModule):
             test_root (str): Path to the test dataset root directory.
             dns_root (str): Path to the DNS dataset root directory.
             snr_db (float, optional): Desired Signal-to-Noise Ratio in decibels. Defaults to 0.
-            transform (callable, optional): Optional transform to be applied on a sample. Defaults to None.
             sample_rate (int, optional): Desired sample rate for audio files. Defaults to 16000.
             mode_prob (dict, optional): Probability distribution for selecting mode. Defaults to {'speaker': 0.5, 'noise': 0.5}.
             batch_size (int, optional): Batch size for DataLoaders. Defaults to 32.
             num_workers (int, optional): Number of worker processes for DataLoaders. Defaults to 4.
             fixed_length (int, optional): Fixed length in samples for audio waveforms. Defaults to 64000.
             fixed_frames (int, optional): Fixed number of frames for video sequences. Defaults to 100.
-            train_val_split (tuple, optional): Ratios for train and validation splits from trainval. Defaults to (0.8, 0.2).
-            upsampled_sample_rate (int, optional): Up sample factor for audio sample. Default to 16000 (for no effect)
-            seed (int, optional): Random seed for reproducibility. Defaults to 42.
         """
         super().__init__()
+        if mode_prob is None:
+            mode_prob = {'speaker': 0.5, 'noise': 0.5}
         self.pretrain_root = pretrain_root
         self.trainval_root = trainval_root
         self.test_root = test_root
         self.dns_root = dns_root
         self.snr_db = snr_db
-        self.transform = transform
         self.sample_rate = sample_rate
         self.mode_prob = mode_prob
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.fixed_length = fixed_length
         self.fixed_frames = fixed_frames
-        self.upsampled_sample_rate = upsampled_sample_rate
 
-        # Placeholders for x_datasets
+        # Placeholders for datasets
         self.pretrain_dataset = None
         self.trainval_dataset = None
         self.test_dataset = None
 
     def setup(self, stage=None):
         """
-        Set up x_datasets for different stages.
+        Set up datasets for different stages.
 
         Args:
             stage (str, optional): Stage to set up ('fit', 'validate', 'test', 'predict'). Defaults to None.
@@ -70,24 +65,20 @@ class DataModule(pl.LightningDataModule):
         general_config = {
             'dns_root': self.dns_root,
             'snr_db': self.snr_db,
-            'transform': self.transform,
             'sample_rate': self.sample_rate,
             'mode_prob': self.mode_prob,
             'fixed_length': self.fixed_length,
-            'upsampled_sample_rate': self.upsampled_sample_rate,
             'fixed_frames': self.fixed_frames
         }
 
         if stage == 'train_val' or stage is None:
-            # Instantiate the pretrain dataset (optional, based on your training strategy)
-
+            # Setup of train and validation dataset
             self.pretrain_dataset = PreprocessingDataset(
                 lrs3_root=self.pretrain_root,
                 **general_config,
                 dataset_tag='pretrain'
             )
 
-            # Instantiate the trainval dataset
             self.trainval_dataset = PreprocessingDataset(
                 lrs3_root=self.trainval_root,
                 **general_config,
@@ -95,7 +86,7 @@ class DataModule(pl.LightningDataModule):
             )
 
         if stage == 'test' or stage is None:
-            # Instantiate the test dataset
+            # Setup of test dataset
             self.test_dataset = PreprocessingDataset(
                 lrs3_root=self.test_root,
                 **general_config,

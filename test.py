@@ -38,14 +38,12 @@ def test():
         test_root=test_root,
         dns_root=dns_root,
         snr_db=config.snr_db,
-        transform=None,
         sample_rate=config.sample_rate,
         mode_prob=config.mode_prob,
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         fixed_length=config.fixed_length,
         fixed_frames=config.fixed_frames,
-        upsampled_sample_rate=config.upsampled_sample_rate
     )
 
     data_module.setup(stage="test")
@@ -61,7 +59,9 @@ def test():
         backbone_type=config.backbone_type,
         video_preprocessing_dim=512,
         embed_dim=768,
-        max_seq_length=1024
+        max_seq_length=1024,
+        orig_sample_rate=config.sample_rate,
+        upsampled_sample_rate=config.upsampled_sample_rate
     )
 
     # Setup model with checkpoint, freeze and set to evaluation
