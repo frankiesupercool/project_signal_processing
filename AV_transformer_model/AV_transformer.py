@@ -1,72 +1,89 @@
 import math
 import torch as th
 from torch import nn
-import torchaudio
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
+import torchaudio
 from video_encoding.video_encoder_service import VideoPreprocessingService
 
-# --- Additional modules for modality and positional encoding ---
 
 class PositionalEncoder(nn.Module):
-    """Sinusoidal positional encoder."""
-    def __init__(self, d_model, max_len=1024, zero_pad=False, scale=False):
+    """Sinusoidal positional encoding"""
+
+    def __init__(self, embed_dim, max_len=1024):
         super().__init__()
-        self.d_model = d_model
+        self.d_model = embed_dim
         self.max_len = max_len
-        pe = th.zeros(max_len, d_model)
+        pe = th.zeros(max_len, embed_dim)
         position = th.arange(0, max_len, dtype=th.float).unsqueeze(1)
-        div_term = th.exp(th.arange(0, d_model, 2, dtype=th.float) * (-math.log(10000.0) / d_model))
+        div_term = th.exp(th.arange(0, embed_dim, 2, dtype=th.float) * (-math.log(10000.0) / embed_dim))
         pe[:, 0::2] = th.sin(position * div_term)
         pe[:, 1::2] = th.cos(position * div_term)
-        if zero_pad:
-            pe[0, :] = 0
-        self.register_buffer('pe', pe.unsqueeze(0))  # shape (1, max_len, d_model)
+        self.register_buffer('pe', pe.unsqueeze(0))  # to get shape (1, max_len, embed_dim)
+
     def forward(self, x):
-        # x: [batch, seq_len, d_model]
+        # [batch, seq_len, embed_dim]
         seq_len = x.size(1)
         return self.pe[:, :seq_len, :]
 
+
 class ModalityEncoder(nn.Module):
-    """Adds a learnable modality-specific vector to the input."""
+    """Adds a learnable modality-specific vector to the input"""
+
     def __init__(self, embed_dim=768):
         super().__init__()
         self.modality_encoding = nn.Parameter(th.randn(1, 1, embed_dim))
+
     def forward(self, x):
         # x: [batch, seq_len, embed_dim]
         return x + self.modality_encoding.expand_as(x)
 
-# --- Modified TransformerModel that fuses audio and video modalities ---
 
-class TransformerFusion(nn.Module):
+class InternalAVTransformer(nn.Module):
     """
-    This module takes in projected audio and video tokens,
-    adds positional and modality encodings to each,
-    concatenates them along the temporal dimension,
-    and fuses them via a transformer encoder.
+    Internally used AVTransformer, sets up actual transformer with 3 layers, 8 heads, and model size 532.
+    Input projected audio and projected video adds positional and modality encodings to each.
+    Concatenates them along the temporal dimension.
     """
-    def __init__(self, embed_dim=768, nhead=8, num_layers=3, dim_feedforward=532, max_seq_length=1024):
+
+    def __init__(self, embed_dim=768, max_seq_length=1024):
         super().__init__()
-        self.positional_encoder = PositionalEncoder(d_model=embed_dim, max_len=max_seq_length)
+        nhead, num_layers, dim_feedforward = 8, 3, 532  # transformer setup as described in paper
+
+        self.positional_encoder = PositionalEncoder(embed_dim=embed_dim, max_len=max_seq_length)
         self.audio_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
         self.video_modality_encoder = ModalityEncoder(embed_dim=embed_dim)
-        encoder_layer = TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_layers)
-    def forward(self, audio_tokens, video_tokens):
-        # audio_tokens: [B, T_a, embed_dim]
-        # video_tokens: [B, T_v, embed_dim]
-        audio_tokens = audio_tokens + self.positional_encoder(audio_tokens) + self.audio_modality_encoder(audio_tokens)
-        video_tokens = video_tokens + self.positional_encoder(video_tokens) + self.video_modality_encoder(video_tokens)
-        # Concatenate along temporal dimension (assume audio tokens come first)
-        fused = th.cat([audio_tokens, video_tokens], dim=1)  # [B, T_a+T_v, embed_dim]
-        fused = self.transformer_encoder(fused)  # [B, T_a+T_v, embed_dim]
-        # Return only the first T_a tokens (the audio tokens)
-        T_a = audio_tokens.size(1)
-        return fused[:, :T_a, :]
 
-# --- Modified VoiceFormerAVE with video encoding branch ---
+        encoder_layer = TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dim_feedforward=dim_feedforward,
+                                                batch_first=True)
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+    def forward(self, audio_tokens, video_tokens):
+        """
+        Generates positional and modality encoding, concat on temporal dim
+        Calls transformer with fused data
+        :param audio_tokens: [batch, conv channels, embed_dim]
+        :param video_tokens: [batch, frames, embed_dim]
+        :return: Audio sequence part of transformer output
+        """
+        # A + PE + MEy
+        audio_tokens = audio_tokens + self.positional_encoder(audio_tokens) + self.audio_modality_encoder(audio_tokens)
+        # V + PE + ME
+        video_tokens = video_tokens + self.positional_encoder(video_tokens) + self.video_modality_encoder(video_tokens)
+        fused = th.cat([audio_tokens, video_tokens], dim=1)
+        fused_out = self.transformer_encoder(fused)
+        audio_seq = audio_tokens.size(1)
+        return fused_out[:, :audio_seq, :]
+
 
 class AVTransformer(nn.Module):
+    """
+    Set up U-Net denoiser style audio encoder decoder.
+    https://github.com/facebookresearch/denoiser/blob/main/denoiser/demucs.py
+    Calls preprocessing and projects preprocessed audio (noised audio) and preprocessed video.
+    Calls InternalAVTransformer where the actual prediction is done.
+    """
     def __init__(self,
+                 # video preprocessing params
                  densetcn_options,
                  allow_size_mismatch,
                  backbone_type,
@@ -74,6 +91,7 @@ class AVTransformer(nn.Module):
                  relu_type,
                  num_classes,
                  model_path,
+                 # U-Net denoiser params
                  chin=1,
                  chout=1,
                  hidden=48,
@@ -81,58 +99,31 @@ class AVTransformer(nn.Module):
                  kernel_size=8,
                  stride=4,
                  padding=2,
-                 resample=3.2,
                  growth=2,
-                 max_hidden=10_000,
-                 normalize=False,  # we assume dataset normalization already
-                 glu=True,
-                 floor=1e-3,
-                 video_chin=512,
-                 d_hid=532,
-                 num_encoder_layers=3,   # for the transformer part (in the conv branch)
-                 num_heads=8,
-                 embed_dim=768,          # projection dimension for transformer
-                 transformer_layers=3,
-                 transformer_ff_dim=532,
+                 max_hidden=10000,
+                 # additional params
+                 video_preprocessing_dim=512,
+                 embed_dim=768,  # projection dimension for transformer
                  max_seq_length=1024):
         super().__init__()
 
-        # Initialise Video
-        self.densetcn_options = densetcn_options
-        self.allow_size_mismatch = allow_size_mismatch
-        self.backbone_type = backbone_type
-        self.use_boundary = use_boundary
-        self.relu_type = relu_type
-        self.num_classes = num_classes
-        self.model_path = model_path
-
+        # Initialise video preprocessing
         self.lipreading_preprocessing = VideoPreprocessingService(
-            allow_size_mismatch,
-            model_path,
-            use_boundary,
-            relu_type,
-            num_classes,
-            backbone_type,
-            densetcn_options)
+            allow_size_mismatch=allow_size_mismatch,
+            model_path=model_path,
+            use_boundary=use_boundary,
+            relu_type=relu_type,
+            num_classes=num_classes,
+            backbone_type=backbone_type,
+            densetcn_options=densetcn_options)
 
-        # Save parameters for conv encoder/decoder as in original VoiceFormerAVE:
-        self.chin = chin
-        self.chout = chout
-        self.hidden = hidden
-        self.depth = depth
-        self.padding = padding
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.floor = floor
-        self.resample = resample
-        self.normalize = normalize  # if True, model normalizes, but dataset already does
+        # U-Net denoiser setup
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
-        activation = nn.GLU(1) if glu else nn.ReLU()
-        ch_scale = 2 if glu else 1
+        activation = nn.GLU(1)
+        ch_scale = 2
 
-        self.video_chin = video_chin
-        # These layers remain for conv encoding:
+        # Iterative U-Net denoiser encoder layer setup
         for index in range(depth):
             encode = [
                 nn.Conv1d(chin, hidden, kernel_size, stride, padding),
@@ -152,37 +143,44 @@ class AVTransformer(nn.Module):
             chout = hidden
             chin = hidden
             hidden = min(int(growth * hidden), max_hidden)
-        # Resampling layers:
+
+        # Resampling layers
         self.upsample = torchaudio.transforms.Resample(orig_freq=16000, new_freq=51200)
         self.downsample = torchaudio.transforms.Resample(orig_freq=51200, new_freq=16000)
 
-        # --- Projection layers to create transformer tokens ---
-        # For audio: after conv encoder, output shape: [B, C, T] then permuted to [B, T, C]
+        # Audio projection layer - project last encoder layer to embedding dim
         self.audio_proj = nn.Linear(chin, embed_dim)
-        # For video: assume video preprocessing produces features with dimension `video_chin`
-        self.video_proj = nn.Linear(video_chin, embed_dim)
+        # Video projection layer - project video preprocessing to embedding dim
+        self.video_proj = nn.Linear(video_preprocessing_dim, embed_dim)
 
-        # The transformer fusion module (as defined above)
-        self.av_transformer = TransformerFusion(embed_dim=embed_dim,
-                                                 nhead=num_heads,
-                                                 num_layers=transformer_layers,
-                                                 dim_feedforward=transformer_ff_dim,
-                                                 max_seq_length=max_seq_length)
+        # Internal actual AV transformer
+        self.av_transformer = InternalAVTransformer(embed_dim=embed_dim, max_seq_length=max_seq_length)
 
     def _encode_audio(self, audio):
-        # audio: [B, channels, time]
+        """
+        Encode up-sampled audio waveform, seq_length_enc = 320 by conv
+        :param audio: Up-sampled audio waveform - [batch, channels, seq_length]
+        :return:
+            x: Encoded audio - [batch, channel dim (embed dim), seq_length_enc]
+            skip_connections: Skip connections for decoder
+        """
         skip_connections = []
         x = audio
         for encode in self.encoder:
             x = encode(x)
             skip_connections.append(x)
-        return x, skip_connections  # x shape: [B, C, T]
+        return x, skip_connections
 
     def _decode_audio(self, x, skip_connections):
-        # x: [B, C, T]
+        """
+        Decoder for output of InternalAVTransformer
+        :param x: Transformer output to decode - [batch, embed_dim, seq_length_enc]
+        :param skip_connections: Skip connection from encoder
+        :return: Decoded audio waveform [batch, 1, seq_length (time upsampled)]
+        """
         for decode in self.decoder:
             skip = skip_connections.pop(-1)
-            # If necessary, align temporal dimensions:
+            # Align temporal dimensions
             if skip.size(-1) < x.size(-1):
                 x = x[..., :skip.size(-1)]
             else:
@@ -191,58 +189,43 @@ class AVTransformer(nn.Module):
             x = decode(x)
         return x
 
-    def forward(self, audio, visual, speaker_embedding=None, use_video_backbone=True):
+    def forward(self, audio, video):
         """
-        Args:
-            audio: input waveform [B, 1, time] (already preprocessed by dataset)
-            visual: preprocessed video features [B, video_seq, video_chin]
-        Returns:
-            clean_audio: waveform [B, time]
+        Upsamples audio to match denoiser encoder, projects audio and video embedding space. Encodes preprocessed audio
+        with U-Net denoiser encoder, preprocesses video. Feeds both into InternalAVTransformer. Decodes transformer
+        audio output with the denoiser decoder.
+        :param audio: Noisy audio input waveform [batch, 1, seq_length] (already preprocessed by dataset)
+        :param video: Video input [batch, frames, 96, 96] (96x96 crop)
+        :return:
+            clean_audio: Predicted audio waveform - [batch, seq_length]
         """
-        # Bypass normalization in model if dataset normalization is used.
         if audio.dim() == 2:
             audio = audio.unsqueeze(1)
-        if self.normalize:
-            mono = audio.mean(dim=1, keepdim=True)
-            std = mono.std(dim=-1, keepdim=True)
-            audio = audio / (self.floor + std)
-        else:
-            std = 1
 
-        length = audio.shape[-1]
         # Upsample audio for conv encoder
-        x = self.upsample(audio)  # [B, 1, time_up]
-        # Pass through conv encoder to obtain features and skip connections:
-        conv_out, skip_connections = self._encode_audio(x)  # conv_out: [B, C, T_conv]
-        # Prepare audio tokens: permute to [B, T_conv, C] then project:
-        audio_tokens = conv_out.permute(0, 2, 1)  # [B, T_conv, C]
-        audio_tokens = self.audio_proj(audio_tokens)  # [B, T_conv, embed_dim]
+        audio = self.upsample(audio)  # [batch, 1, time_up]
+        # Encode audio
+        audio_enc, skip_connections = self._encode_audio(audio)
+        # Encoder output shape [batch, embed_dim, seq_length_encoded] permute to [batch, seq, embed_dim]
+        audio_tokens = audio_enc.permute(0, 2, 1)
+        audio_tokens = self.audio_proj(audio_tokens)
 
-        # For video, if you want to use the full encoding service:
-        if use_video_backbone:
-            # Assume visual is a raw video file path or less processed video data.
-            video_encoded = self.lipreading_preprocessing.generate_encodings(visual)
-            video_encoded = video_encoded.float()
-        else:
-            # Otherwise, assume visual is already preprocessed.
-            video_encoded = visual
+        # Preprocess video
+        video_encoded = self.lipreading_preprocessing.generate_encodings(video)
+        video_encoded = video_encoded.float()
+        video_tokens = self.video_proj(video_encoded)
 
-        # Process video branch:
-        video_tokens = self.video_proj(video_encoded)  # [B, video_seq, embed_dim]
+        # Call to InternalAVTransformer for prediction
+        predicted_audio_tokens = self.av_transformer(audio_tokens, video_tokens)
 
-        # Fuse audio and video tokens via transformer:
-        fused_audio_tokens = self.av_transformer(audio_tokens, video_tokens)  # [B, T_conv, embed_dim]
+        # Back-projection of transformer output to match decoder with linear layer (1x1 conv)
+        proj_back = (nn.Conv1d(predicted_audio_tokens.size(-1), audio_enc.size(1), kernel_size=1)
+                     .to(predicted_audio_tokens.device))
+        # [batch, seq, embed_dim] permute to decoder input shape [batch, embed_dim, seq]
+        predicted_audio_tokens = predicted_audio_tokens.transpose(1, 2)
+        conv_in = proj_back(predicted_audio_tokens)
 
-        # (Optionally, you could project fused tokens back to conv channel dimension.)
-        # For simplicity, we use a linear layer (1x1 conv) here:
-        proj_back = nn.Conv1d(fused_audio_tokens.size(-1), conv_out.size(1), kernel_size=1).to(fused_audio_tokens.device)
-        # Permute to [B, embed_dim, T_conv]
-        fused_back = fused_audio_tokens.transpose(1, 2)
-        conv_in = proj_back(fused_back)  # [B, C, T_conv]
-
-        # Decode audio features using conv decoder and skip connections:
-        decoded = self._decode_audio(conv_in, skip_connections)  # [B, 1, time_up_decoded]
-        # Downsample back to target sample rate:
-        decoded = self.downsample(decoded)
-        decoded = decoded[..., :length]
-        return decoded * std
+        decoded_audio = self._decode_audio(conv_in, skip_connections)  # [batch, 1, time_up]
+        # Downsample to original sample rate
+        decoded_audio = self.downsample(decoded_audio)
+        return decoded_audio

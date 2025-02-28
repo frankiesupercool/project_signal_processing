@@ -16,46 +16,8 @@ def run_inference():
 
     print("Initializing inference...")
 
-    transformer_model_instance = AVTransformer(
-        densetcn_options=config.densetcn_options,
-        allow_size_mismatch=config.allow_size_mismatch,
-        model_path=config.MODEL_PATH,
-        use_boundary=config.use_boundary,
-        relu_type=config.relu_type,
-        num_classes=config.num_classes,
-        backbone_type=config.backbone_type,
-        chin=1,
-        chout=1,
-        hidden=48,
-        depth=5,
-        kernel_size=8,
-        stride=4,
-        padding=2,
-        resample=3.2,
-        growth=2,
-        max_hidden=10000,
-        normalize=False,  # use dataset normalization
-        glu=True,
-        floor=1e-3,
-        video_chin=512,
-        d_hid=532,
-        num_encoder_layers=3,
-        num_heads=8,
-        embed_dim=768,
-        transformer_layers=3,
-        transformer_ff_dim=532,
-        max_seq_length=1024
-    )
-
+    # Load checkpoint from config
     best_checkpoint_path = config.checkpoint
-
-    model = AVTransformerLightningModule.load_from_checkpoint(
-        checkpoint_path=best_checkpoint_path,
-        model=transformer_model_instance
-    )
-
-    model.eval()
-    model.freeze()
 
     data_module = DataModule(
         pretrain_root=config.PRETRAIN_DATA_PATH,
@@ -74,6 +36,27 @@ def run_inference():
     )
 
     data_module.setup(stage="test")
+
+    transformer_model_instance = AVTransformer(
+        densetcn_options=config.densetcn_options,
+        allow_size_mismatch=config.allow_size_mismatch,
+        model_path=config.MODEL_PATH,
+        use_boundary=config.use_boundary,
+        relu_type=config.relu_type,
+        num_classes=config.num_classes,
+        backbone_type=config.backbone_type,
+        video_preprocessing_dim=512,
+        embed_dim=768,
+        max_seq_length=1024
+    )
+
+    model = AVTransformerLightningModule.load_from_checkpoint(
+        checkpoint_path=best_checkpoint_path,
+        model=transformer_model_instance
+    )
+
+    model.eval()
+    model.freeze()
 
     # Get a batch of test data
     test_loader = data_module.test_dataloader()
@@ -134,7 +117,7 @@ def run_inference():
     plt.close()
 
     plt.figure(figsize=(10, 4))
-    plt.plot(preprocessed_audio, label="Preprocessed Audio", color="green")
+    plt.plot(preprocessed_audio, label="Preprocessed Audio", color="red")
     plt.xlabel("Time (samples)")
     plt.ylabel("Amplitude")
     plt.title("Preprocessed Audio (Inference)")

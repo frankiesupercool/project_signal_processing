@@ -71,26 +71,8 @@ def train():
         relu_type=config.relu_type,
         num_classes=config.num_classes,
         backbone_type=config.backbone_type,
-        chin=1,
-        chout=1,
-        hidden=48,
-        depth=5,
-        kernel_size=8,
-        stride=4,
-        padding=2,
-        resample=3.2,
-        growth=2,
-        max_hidden=10000,
-        normalize=False,  # Use dataset normalization
-        glu=True,
-        floor=1e-3,
-        video_chin=512,
-        d_hid=532,
-        num_encoder_layers=3,
-        num_heads=8,
+        video_preprocessing_dim=512,
         embed_dim=768,
-        transformer_layers=3,
-        transformer_ff_dim=532,
         max_seq_length=1024
     )
 

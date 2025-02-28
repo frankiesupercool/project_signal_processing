@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class AVTransformerLightningModule(pl.LightningModule):
     def __init__(self, model: nn.Module, learning_rate: float = 5e-5):
         """
-
+        LightningModule that wraps the AV transformer model
         :param model: The AV transformer model
         :param learning_rate: Learning rate (default is 5e-5)
         """
@@ -37,7 +37,7 @@ class AVTransformerLightningModule(pl.LightningModule):
 
     def forward(self, encoded_audio, encoded_video):
         """
-        Forward pass through the model.
+        Forward pass through the model
         :param encoded_audio: Tensor of shape [batch, 1, time]
         :param encoded_video: Tensor of shape [batch, video_seq, video_feature_dim]
         :return: Predicted clean audio as tensor of shape [batch, waveform_length]
@@ -46,7 +46,7 @@ class AVTransformerLightningModule(pl.LightningModule):
 
     def step(self, batch):
         """
-        Common step for train/validation/test phases.
+        Common step for train/validation/test phases
         :param batch: Dictionary with keys: 'encoded_audio', 'encoded_video', 'clean_speech'
         :return:
             loss: step loss
