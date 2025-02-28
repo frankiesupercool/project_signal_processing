@@ -8,7 +8,7 @@ original paper.
 
 ## Setup
 
-To setup the conda environment for this project use the [environment.yml](environment.yml) by running:
+To setup the conda environment for this project use the [environment.yml](environment.yml) by running: \
 `conda env create -f environment.yml`
 
 ### Data
