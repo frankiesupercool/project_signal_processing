@@ -61,9 +61,11 @@ class InternalAVTransformer(nn.Module):
         """
         Generates positional and modality encoding, concat on temporal dim
         Calls transformer with fused data
-        :param audio_tokens: [batch, conv channels, embed_dim]
-        :param video_tokens: [batch, frames, embed_dim]
-        :return: Audio sequence part of transformer output
+        Args:
+            audio_tokens: [batch, conv channels, embed_dim]
+            video_tokens: [batch, frames, embed_dim]
+
+        Returns: Audio sequence part of transformer output
         """
         # A + PE + MEy
         audio_tokens = audio_tokens + self.positional_encoder(audio_tokens) + self.audio_modality_encoder(audio_tokens)
@@ -82,6 +84,7 @@ class AVTransformer(nn.Module):
     Calls preprocessing and projects preprocessed audio (noised audio) and preprocessed video.
     Calls InternalAVTransformer where the actual prediction is done.
     """
+
     def __init__(self,
                  # video preprocessing params
                  densetcn_options,
@@ -161,8 +164,10 @@ class AVTransformer(nn.Module):
     def _encode_audio(self, audio):
         """
         Encode up-sampled audio waveform, seq_length_enc = 320 by conv
-        :param audio: Up-sampled audio waveform - [batch, channels, seq_length]
-        :return:
+        Args:
+            audio: Up-sampled audio waveform - [batch, channels, seq_length]
+
+        Returns:
             x: Encoded audio - [batch, channel dim (embed dim), seq_length_enc]
             skip_connections: Skip connections for decoder
         """
@@ -176,9 +181,11 @@ class AVTransformer(nn.Module):
     def _decode_audio(self, x, skip_connections):
         """
         Decoder for output of InternalAVTransformer
-        :param x: Transformer output to decode - [batch, embed_dim, seq_length_enc]
-        :param skip_connections: Skip connection from encoder
-        :return: Decoded audio waveform [batch, 1, seq_length (time upsampled)]
+        Args:
+            x: Transformer output to decode - [batch, embed_dim, seq_length_enc]
+            skip_connections: Skip connection from encoder
+
+        Returns: Decoded audio waveform [batch, 1, seq_length (time upsampled)]
         """
         for decode in self.decoder:
             skip = skip_connections.pop(-1)
@@ -196,9 +203,12 @@ class AVTransformer(nn.Module):
         Upsamples audio to match denoiser encoder, projects audio and video embedding space. Encodes preprocessed audio
         with U-Net denoiser encoder, preprocesses video. Feeds both into InternalAVTransformer. Decodes transformer
         audio output with the denoiser decoder.
-        :param audio: Noisy audio input waveform [batch, 1, seq_length] (already preprocessed by dataset)
-        :param video: Video input [batch, frames, 96, 96] (96x96 crop)
-        :return:
+
+        Args:
+            audio: Noisy audio input waveform [batch, 1, seq_length] (already preprocessed by dataset)
+            video: Video input [batch, frames, 96, 96] (96x96 crop)
+
+        Returns:
             clean_audio: Predicted audio waveform - [batch, seq_length]
         """
         if audio.dim() == 2:

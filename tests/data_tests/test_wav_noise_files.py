@@ -7,8 +7,11 @@ def test_wav_files(wav_folder):
     """
     Precheck all WAV files in a folder to ensure they are valid, have non-zero power, and are not in unsigned 8 bit
     format (PCM_U)
-    :param wav_folder: Path to the folder containing WAV files.
-    :return: List of valid WAV files.
+    Args:
+        wav_folder: Path to the folder containing WAV files.
+
+    Returns: List of valid WAV files.
+
     """
     valid_files = []
     for file in os.listdir(wav_folder):

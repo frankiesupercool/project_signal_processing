@@ -16,8 +16,9 @@ class AVTransformerLightningModule(pl.LightningModule):
     def __init__(self, model: nn.Module, learning_rate: float = 5e-5):
         """
         LightningModule that wraps the AV transformer model
-        :param model: The AV transformer model
-        :param learning_rate: Learning rate (default is 5e-5)
+        Args:
+            model: The AV transformer model
+            learning_rate: Learning rate (default is 5e-5)
         """
         super().__init__()
         # Save hyperparameters excluding the model itself
@@ -38,17 +39,21 @@ class AVTransformerLightningModule(pl.LightningModule):
     def forward(self, encoded_audio, encoded_video):
         """
         Forward pass through the model
-        :param encoded_audio: Tensor of shape [batch, 1, time]
-        :param encoded_video: Tensor of shape [batch, video_seq, video_feature_dim]
-        :return: Predicted clean audio as tensor of shape [batch, waveform_length]
+        Args:
+            encoded_audio: Tensor of shape [batch, 1, time]
+            encoded_video: Tensor of shape [batch, video_seq, video_feature_dim]
+
+        Returns: Predicted clean audio as tensor of shape [batch, waveform_length]
         """
         return self.model(encoded_audio, encoded_video)
 
     def step(self, batch):
         """
         Common step for train/validation/test phases
-        :param batch: Dictionary with keys: 'encoded_audio', 'encoded_video', 'clean_speech'
-        :return:
+        Args:
+            batch: Dictionary with keys: 'encoded_audio', 'encoded_video', 'clean_speech'
+
+        Returns:
             loss: step loss
             prediction: predicted clean audio
             clean_speech: original clean speech audio
@@ -66,9 +71,12 @@ class AVTransformerLightningModule(pl.LightningModule):
         """
         Training step, checks first for NaNs/Infs in batch and sets them to 0.0
         Calls step, logs loss
-        :param batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
-        :param batch_idx: Index of current batch
-        :return: Traning step loss of current batch
+        Args:
+            batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
+            batch_idx: Index of current batch
+
+        Returns: Training step loss of current batch
+
         """
 
         encoded_audio = batch['encoded_audio']
@@ -95,10 +103,13 @@ class AVTransformerLightningModule(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         """
         Validation step calls step, logs loss
-        :param batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
-        :param batch_idx: Index of current batch
-        :return: Validation step loss of current batch
+        Args:
+            batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
+            batch_idx: Index of current batch
+
+        Returns: Validation step loss of current batch
         """
+
         loss, _, _ = self.step(batch)
         self.val_loss_metric.update(loss)
         batch_size = batch['encoded_audio'].shape[0]
@@ -110,10 +121,13 @@ class AVTransformerLightningModule(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         """
         Test step calls step, logs loss and computes SDR and STOI metrics
-        :param batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
-        :param batch_idx: Index of current batch
-        :return: Test step loss of current batch and
+        Args:
+            batch: Dictionary with 'encoded_audio', 'encoded_video', 'clean_speech'
+            batch_idx: Index of current batch
+
+        Returns: Test step loss and SDR value of current batch
         """
+
         loss, predictions, targets = self.step(batch)
         self.test_loss_metric.update(loss)
         batch_size = batch['encoded_audio'].shape[0]
@@ -144,7 +158,7 @@ class AVTransformerLightningModule(pl.LightningModule):
         Reacts quick to being stuck on optima by decreasing learning rate by 10% (factor 0.9)
         after no improvement of 1 epoch (patience 1).
 
-        :return: Dictionary of optimizer and learning rate scheduler configuration.
+        Returns: Dictionary of optimizer and learning rate scheduler configuration.
         optimizer: The Adam optimizer, weight decay: 0.0001
         lr_scheduler:
             - scheduler: Defined scheduler
@@ -152,6 +166,7 @@ class AVTransformerLightningModule(pl.LightningModule):
             - interval: Interval for updating (epoch)
             - frequency: Frequency of update (every epoch)
         """
+
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0001)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=1)
 
