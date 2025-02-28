@@ -1,4 +1,3 @@
-
 import math
 from typing import List
 
@@ -18,28 +17,28 @@ def conv3x3(in_planes, out_planes, stride=1):
                      padding=1, bias=False)
 
 
-def downsample_basic_block( inplanes, outplanes, stride ):
-    return  nn.Sequential(
-                nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(outplanes),
-            )
+def downsample_basic_block(inplanes, outplanes, stride):
+    return nn.Sequential(
+        nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=stride, bias=False),
+        nn.BatchNorm2d(outplanes),
+    )
 
-def downsample_basic_block_v2( inplanes, outplanes, stride ):
-    return  nn.Sequential(
-                nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True, count_include_pad=False),
-                nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, bias=False),
-                nn.BatchNorm2d(outplanes),
-            )
 
+def downsample_basic_block_v2(inplanes, outplanes, stride):
+    return nn.Sequential(
+        nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True, count_include_pad=False),
+        nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, bias=False),
+        nn.BatchNorm2d(outplanes),
+    )
 
 
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, relu_type = 'prelu' ):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, relu_type='prelu'):
         super(BasicBlock, self).__init__()
 
-        assert relu_type in ['relu','prelu', 'swish']
+        assert relu_type in ['relu', 'prelu', 'swish']
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -84,9 +83,9 @@ class ResNet(nn.Module):
     def __init__(self, block,
                  layers: List[int],
                  num_classes=1000,
-                 relu_type:str = 'relu',
-                 gamma_zero:bool = False,
-                 avg_pool_downsample:bool = False):
+                 relu_type: str = 'relu',
+                 gamma_zero: bool = False,
+                 avg_pool_downsample: bool = False):
         """
         Implementation of the ResNet architecture.
 
@@ -124,23 +123,22 @@ class ResNet(nn.Module):
 
         if self.gamma_zero:
             for m in self.modules():
-                if isinstance(m, BasicBlock ):
+                if isinstance(m, BasicBlock):
                     m.bn2.weight.data.zero_()
 
     def _make_layer(self, block, planes, blocks, stride=1):
 
-
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = self.downsample_block( inplanes = self.inplanes,
-                                                 outplanes = planes * block.expansion,
-                                                 stride = stride )
+            downsample = self.downsample_block(inplanes=self.inplanes,
+                                               outplanes=planes * block.expansion,
+                                               stride=stride)
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, relu_type = self.relu_type))
+        layers.append(block(self.inplanes, planes, stride, downsample, relu_type=self.relu_type))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, relu_type = self.relu_type))
+            layers.append(block(self.inplanes, planes, relu_type=self.relu_type))
 
         return nn.Sequential(*layers)
 

@@ -9,8 +9,10 @@ implementation from:
 https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
 """
 
-def _average_batch( x, lengths):
-    return torch.stack( [torch.mean( x[index][:,0:i], 1 ) for index, i in enumerate(lengths)],0 )
+
+def _average_batch(x, lengths):
+    return torch.stack([torch.mean(x[index][:, 0:i], 1) for index, i in enumerate(lengths)], 0)
+
 
 class SELayer(nn.Module):
     def __init__(self, channel, reduction=2):
