@@ -80,7 +80,6 @@ def test():
 
     print("Start testing...")
     test_results = trainer.test(model=model, datamodule=data_module)
-    print("Testing complete!")
     print(f"Test Results: {test_results}")
 
     print("Saving of predicted audio...")
@@ -106,7 +105,7 @@ def test():
         reference_audio_np = reference_audio.cpu().numpy().squeeze(1)
         pesq_scores = []
         # PESQ for each sample in the batch
-        for ref, deg in zip(reference_audio_np, clean_audio_np):
+        for ref, deg in zip(reference_audio_np, clean_audio):
             # ensure signals are in the range [-1, 1] and use wideband mode ('wb')
             score = pesq(config.sample_rate, ref, deg, 'wb')
             pesq_scores.append(score)
@@ -123,6 +122,8 @@ def test():
         md_file.write(f"- *PESQ Information:* {avg_pesq}\n")
         md_file.write(f"- *Enhanced Audio File:* {model_output_path}\n")
     print(f"Test results written to '{markdown_filename}'")
+
+    print("Testing complete!")
 
 
 if __name__ == "__main__":

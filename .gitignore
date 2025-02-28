@@ -13,3 +13,4 @@ paired_files_test.txt
 paired_files_trainval.txt
 lightning_logs/
 checkpoints/
+inference_audio/clean_audio_from_test_phase.wav

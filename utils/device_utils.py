@@ -1,9 +1,11 @@
-import torch
 import random
+import torch
 
 """
 function to get the device to improve training speed
 """
+
+
 def get_device():
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -13,11 +15,14 @@ def get_device():
         print("Using CPU")
     return device
 
+
 """
 function to set seeds for reproducibility
 
 Args: seed
 """
+
+
 def set_seed(seed):
     random.seed(seed)
     torch.manual_seed(seed)
