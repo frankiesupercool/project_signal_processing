@@ -5,12 +5,12 @@ from collections import OrderedDict
 from video_encoding.models.se_module import SELayer
 from video_encoding.models.swish import Swish
 
-
 """Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With
 implementation from:
 
 https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
 """
+
 
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size, symm_chomp):
@@ -19,11 +19,12 @@ class Chomp1d(nn.Module):
         self.symm_chomp = symm_chomp
         if self.symm_chomp:
             assert self.chomp_size % 2 == 0, "If symmetric chomp, chomp size needs to be even"
+
     def forward(self, x):
         if self.chomp_size == 0:
             return x
         if self.symm_chomp:
-            return x[:, :, self.chomp_size//2:-self.chomp_size//2].contiguous()
+            return x[:, :, self.chomp_size // 2:-self.chomp_size // 2].contiguous()
         else:
             return x[:, :, :-self.chomp_size].contiguous()
 
@@ -32,11 +33,12 @@ class TemporalConvLayer(nn.Module):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, relu_type):
         super(TemporalConvLayer, self).__init__()
         self.net = nn.Sequential(
-                nn.Conv1d( n_inputs, n_outputs, kernel_size,
-                           stride=stride, padding=padding, dilation=dilation),
-                nn.BatchNorm1d(n_outputs),
-                Chomp1d(padding, True),
-                nn.PReLU(num_parameters=n_outputs) if relu_type == 'prelu' else Swish() if relu_type == 'swish' else nn.ReLU(),)
+            nn.Conv1d(n_inputs, n_outputs, kernel_size,
+                      stride=stride, padding=padding, dilation=dilation),
+            nn.BatchNorm1d(n_outputs),
+            Chomp1d(padding, True),
+            nn.PReLU(
+                num_parameters=n_outputs) if relu_type == 'prelu' else Swish() if relu_type == 'swish' else nn.ReLU(), )
 
     def forward(self, x):
         return self.net(x)
@@ -46,19 +48,21 @@ class _ConvBatchChompRelu(nn.Module):
     def __init__(self, n_inputs, n_outputs, kernel_size_set, stride, dilation, dropout, relu_type, se_module=False):
         super(_ConvBatchChompRelu, self).__init__()
 
-        self.num_kernels = len( kernel_size_set )
+        self.num_kernels = len(kernel_size_set)
         self.n_outputs_branch = n_outputs // self.num_kernels
         assert n_outputs % self.num_kernels == 0, "Number of output channels needs to be divisible by number of kernels"
 
-        for k_idx,k in enumerate( kernel_size_set ):
+        for k_idx, k in enumerate(kernel_size_set):
             if se_module:
-                setattr( self, 'cbcr0_se_{}'.format(k_idx), SELayer( n_inputs, reduction=16))
-            cbcr = TemporalConvLayer( n_inputs, self.n_outputs_branch, k, stride, dilation, (k-1)*dilation, relu_type)
-            setattr( self,'cbcr0_{}'.format(k_idx), cbcr )
+                setattr(self, 'cbcr0_se_{}'.format(k_idx), SELayer(n_inputs, reduction=16))
+            cbcr = TemporalConvLayer(n_inputs, self.n_outputs_branch, k, stride, dilation, (k - 1) * dilation,
+                                     relu_type)
+            setattr(self, 'cbcr0_{}'.format(k_idx), cbcr)
         self.dropout0 = nn.Dropout(dropout)
-        for k_idx,k in enumerate( kernel_size_set ):
-            cbcr = TemporalConvLayer( n_outputs, self.n_outputs_branch, k, stride, dilation, (k-1)*dilation, relu_type)
-            setattr( self,'cbcr1_{}'.format(k_idx), cbcr )
+        for k_idx, k in enumerate(kernel_size_set):
+            cbcr = TemporalConvLayer(n_outputs, self.n_outputs_branch, k, stride, dilation, (k - 1) * dilation,
+                                     relu_type)
+            setattr(self, 'cbcr1_{}'.format(k_idx), cbcr)
         self.dropout1 = nn.Dropout(dropout)
 
         self.se_module = se_module
@@ -76,23 +80,23 @@ class _ConvBatchChompRelu(nn.Module):
         # type: (List[Tensor]) -> Tensor
         x = torch.cat(inputs, 1)
         outputs = []
-        for k_idx in range( self.num_kernels ):
+        for k_idx in range(self.num_kernels):
             if self.se_module:
-                branch_se = getattr(self,'cbcr0_se_{}'.format(k_idx))
-            branch_convs = getattr(self,'cbcr0_{}'.format(k_idx))
+                branch_se = getattr(self, 'cbcr0_se_{}'.format(k_idx))
+            branch_convs = getattr(self, 'cbcr0_{}'.format(k_idx))
             if self.se_module:
-                outputs.append( branch_convs(branch_se(x)))
+                outputs.append(branch_convs(branch_se(x)))
             else:
-                outputs.append( branch_convs(x) )
+                outputs.append(branch_convs(x))
         out0 = torch.cat(outputs, 1)
-        out0 = self.dropout0( out0 )
+        out0 = self.dropout0(out0)
         # second multi-branch set of convolutions
         outputs = []
-        for k_idx in range( self.num_kernels ):
-            branch_convs = getattr(self,'cbcr1_{}'.format(k_idx))
-            outputs.append( branch_convs(out0) )
+        for k_idx in range(self.num_kernels):
+            branch_convs = getattr(self, 'cbcr1_{}'.format(k_idx))
+            outputs.append(branch_convs(out0))
         out1 = torch.cat(outputs, 1)
-        out1 = self.dropout1( out1 )
+        out1 = self.dropout1(out1)
         # downsample?
         res = x if self.downsample is None else self.downsample(x)
         return self.relu_final(out1 + res)
@@ -109,13 +113,13 @@ class _ConvBatchChompRelu(nn.Module):
 class _DenseBlock(nn.ModuleDict):
     _version = 2
 
-    def __init__( self, num_layers, num_input_features, growth_rate,
-                  kernel_size_set, dilation_size_set,
-                  dropout, relu_type, squeeze_excitation,
-                  ):
+    def __init__(self, num_layers, num_input_features, growth_rate,
+                 kernel_size_set, dilation_size_set,
+                 dropout, relu_type, squeeze_excitation,
+                 ):
         super(_DenseBlock, self).__init__()
         for i in range(num_layers):
-            dilation_size = dilation_size_set[i%len(dilation_size_set)]
+            dilation_size = dilation_size_set[i % len(dilation_size_set)]
             layer = _ConvBatchChompRelu(
                 n_inputs=num_input_features + i * growth_rate,
                 n_outputs=growth_rate,
@@ -125,7 +129,7 @@ class _DenseBlock(nn.ModuleDict):
                 dropout=dropout,
                 relu_type=relu_type,
                 se_module=squeeze_excitation,
-                )
+            )
 
             self.add_module('denselayer%d' % (i + 1), layer)
 
@@ -177,7 +181,7 @@ class DenseTemporalConvNet(nn.Module):
                 dropout=dropout,
                 relu_type=relu_type,
                 squeeze_excitation=squeeze_excitation,
-                )
+            )
             self.features.add_module('denseblock%d' % (i + 1), block)
             num_features = num_features + num_layers * growth_rate_set[i]
 
@@ -190,7 +194,6 @@ class DenseTemporalConvNet(nn.Module):
 
         # Final batch norm
         self.features.add_module('norm5', nn.BatchNorm1d(num_features))
-
 
     def forward(self, x):
         features = self.features(x)

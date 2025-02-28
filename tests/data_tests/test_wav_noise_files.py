@@ -5,14 +5,13 @@ import config
 
 def test_wav_files(wav_folder):
     """
-    Precheck all WAV files in a folder to ensure they are valid, have non-zero power,
-    and are not in unsigned 8 bit format (PCM_U)
-
+    Precheck all WAV files in a folder to ensure they are valid, have non-zero power, and are not in unsigned 8 bit
+    format (PCM_U)
     Args:
-        wav_folder (str): Path to the folder containing WAV files.
+        wav_folder: Path to the folder containing WAV files.
 
-    Returns:
-        valid_files (list): List of valid WAV files.
+    Returns: List of valid WAV files.
+
     """
     valid_files = []
     for file in os.listdir(wav_folder):

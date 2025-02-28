@@ -7,6 +7,7 @@ implementation from:
 https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
 """
 
+
 class Swish(nn.Module):
     """Construct an Swish object."""
 

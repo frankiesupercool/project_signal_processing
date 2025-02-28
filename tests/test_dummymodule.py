@@ -1,18 +1,21 @@
-import pytorch_lightning as pl
-import torch.nn as nn
-import torch
-
-import config
-from dataset_lightning.lightning_datamodule import DataModule  # Adjusted import path
 import os
+import torch
+import torch.nn as nn
+import pytorch_lightning as pl
+import config
+from dataset_lightning.lightning_datamodule import DataModule
+
 
 class DummyModel(pl.LightningModule):
+    """ Setup of a dummy LightningModule """
     def __init__(self, encoded_length, channels):
         super().__init__()
         self.encoded_length = encoded_length
         self.channels = channels
         self.input_size = self.channels * self.encoded_length
-        print(f"Initializing DummyModel with channels={self.channels}, encoded_length={self.encoded_length}, input_size={self.input_size}")
+        print(
+            f"Initializing DummyModel with channels={self.channels}, encoded_length={self.encoded_length}, "
+            f"input_size={self.input_size}")
         self.model = nn.Sequential(
             nn.Flatten(),
             nn.Linear(self.input_size, 1)  # Predict a single value
@@ -20,7 +23,7 @@ class DummyModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x = batch['encoded_audio']  # [batch_size, channels, encoded_length]
-        y = batch['clean_speech']   # [batch_size, 1, 64000]
+        y = batch['clean_speech']  # [batch_size, 1, 64000]
 
         # Forward pass (Flattening is handled by the model)
         pred = self.model(x)
@@ -35,7 +38,7 @@ class DummyModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x = batch['encoded_audio']  # [batch_size, channels, encoded_length]
-        y = batch['clean_speech']   # [batch_size, 1, 64000]
+        y = batch['clean_speech']  # [batch_size, 1, 64000]
 
         # Forward pass (Flattening is handled by the model)
         pred = self.model(x)
@@ -54,10 +57,10 @@ class DummyModel(pl.LightningModule):
 
 def test_trainer():
     # Define dataset paths
-    pretrain_root = config.PRETRAIN_DATA_PATH     # Path for pretraining data
-    trainval_root = config.TRAINVAL_DATA_PATH      # Path for training-validation data
-    test_root = config.TEST_DATA_PATH           # Path for testing data
-    dns_root = config.DNS_DATA_PATH   # Path for DNS noise data
+    pretrain_root = config.PRETRAIN_DATA_PATH  # Path for pretraining data
+    trainval_root = config.TRAINVAL_DATA_PATH  # Path for training-validation data
+    test_root = config.TEST_DATA_PATH  # Path for testing data
+    dns_root = config.DNS_DATA_PATH  # Path for DNS noise data
 
     # Verify that directories exist
     for path in [pretrain_root, trainval_root, test_root, dns_root]:
@@ -70,15 +73,7 @@ def test_trainer():
         trainval_root=trainval_root,
         test_root=test_root,
         dns_root=dns_root,
-        densetcn_options=config.densetcn_options,
-        allow_size_mismatch=config.allow_size_mismatch,
-        model_path=config.MODEL_PATH,
-        use_boundary=config.use_boundary,
-        relu_type=config.relu_type,
-        num_classes=config.num_classes,
-        backbone_type=config.backbone_type,
         snr_db=config.snr_db,
-        transform=None,
         sample_rate=config.sample_rate,
         mode_prob=config.mode_prob,
         batch_size=config.batch_size,
@@ -92,14 +87,14 @@ def test_trainer():
 
     # Fetch DataLoaders
     train_loader = data_module.train_dataloader()
-    val_loader = data_module.val_dataloader()
-    test_loader = data_module.test_dataloader()
+    # val_loader = data_module.val_dataloader()
+    # test_loader = data_module.test_dataloader()
 
     # Fetch a single batch to determine encoded_length and channels
     sample_batch = next(iter(train_loader))
     encoded_audio_shape = sample_batch['encoded_audio'].shape  # [batch_size, channels, encoded_length]
     encoded_length = encoded_audio_shape[2]  # Extract encoded_length
-    channels = encoded_audio_shape[1]         # Extract number of channels
+    channels = encoded_audio_shape[1]  # Extract number of channels
     print(f"Encoded Audio Shape: {encoded_audio_shape}")
     print(f"Determined encoded_length: {encoded_length}")
     print(f"Number of Channels: {channels}")
@@ -111,17 +106,17 @@ def test_trainer():
     if torch.cuda.is_available():
         trainer = pl.Trainer(
             max_epochs=1,
-            limit_train_batches=2,          # Limit for quick testing
+            limit_train_batches=2,  # Limit for quick testing
             accelerator='gpu',
             devices=1,
-            log_every_n_steps=1,            # To see logs for each training step
+            log_every_n_steps=1,  # To see logs for each training step
         )
     else:
         trainer = pl.Trainer(
             max_epochs=1,
-            limit_train_batches=2,          # Limit for quick testing
+            limit_train_batches=2,  # Limit for quick testing
             accelerator='cpu',
-            log_every_n_steps=1,            # To see logs for each training step
+            log_every_n_steps=1,  # To see logs for each training step
         )
 
     # Train the model
@@ -130,5 +125,3 @@ def test_trainer():
 
 if __name__ == "__main__":
     test_trainer()
-
-

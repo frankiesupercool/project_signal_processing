@@ -38,20 +38,20 @@ class VideoEncoder(nn.Module):
         self.use_boundary = use_boundary
         self.extract_feats = extract_feats
 
-        #Standard options for ResNet
+        # Standard options for ResNet
         self.frontend_nout = 64
         self.backend_out = 512
         self.trunk = ResNet(BasicBlock, [2, 2, 2, 2], relu_type=relu_type)
 
-        #Defining the different layers
-        #Start with a 3d convolutional layer
+        # Defining the different layers
+        # Start with a 3d convolutional layer
         conv3d_layer = nn.Conv3d(1,
                                  self.frontend_nout,
                                  kernel_size=(5, 7, 7),
                                  stride=(1, 2, 2),
                                  padding=(2, 3, 3),
                                  bias=False)
-        #3d Batch normalization layer
+        # 3d Batch normalization layer
         batch_norm_3d_layer = nn.BatchNorm3d(self.frontend_nout)
 
         # Different types of ReLu
@@ -64,7 +64,7 @@ class VideoEncoder(nn.Module):
         else:
             raise NotImplementedError
 
-        #Lastly use a 3d MaxPoolLayer
+        # Lastly use a 3d MaxPoolLayer
         max_pool_3d_layer = nn.MaxPool3d(kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1))
 
         # Combine all four layers
@@ -74,18 +74,17 @@ class VideoEncoder(nn.Module):
                                         max_pool_3d_layer)
 
         # Dense TCN layer unused if used just to extract features
-        self.tcn =  DenseTCN( block_config=densetcn_options['block_config'],
-                              growth_rate_set=densetcn_options['growth_rate_set'],
-                              input_size=self.backend_out if not self.use_boundary else self.backend_out+1,
-                              reduced_size=densetcn_options['reduced_size'],
-                              num_classes=num_classes,
-                              kernel_size_set=densetcn_options['kernel_size_set'],
-                              dilation_size_set=densetcn_options['dilation_size_set'],
-                              dropout=densetcn_options['dropout'],
-                              relu_type=relu_type,
-                              squeeze_excitation=densetcn_options['squeeze_excitation'],
+        self.tcn = DenseTCN(block_config=densetcn_options['block_config'],
+                            growth_rate_set=densetcn_options['growth_rate_set'],
+                            input_size=self.backend_out if not self.use_boundary else self.backend_out + 1,
+                            reduced_size=densetcn_options['reduced_size'],
+                            num_classes=num_classes,
+                            kernel_size_set=densetcn_options['kernel_size_set'],
+                            dilation_size_set=densetcn_options['dilation_size_set'],
+                            dropout=densetcn_options['dropout'],
+                            relu_type=relu_type,
+                            squeeze_excitation=densetcn_options['squeeze_excitation'],
                             )
-
 
     def forward(self, x, lengths, boundaries=None) -> Tensor:
         """
@@ -105,7 +104,7 @@ class VideoEncoder(nn.Module):
         # If you want an explicit channel dimension:
         B, C, T, H, W = x.size()
         x = self.frontend3D(x)
-        Tnew = x.shape[2]    # output should be B x C2 x Tnew x H x W
+        Tnew = x.shape[2]  # output should be B x C2 x Tnew x H x W
         x = self.threed_to_2d_tensor(x)
         #resnet
         x = self.trunk(x)

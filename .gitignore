@@ -8,5 +8,9 @@ __pycache__/
 dataset_lightning/paired_files.txt
 dns_files.txt
 paired_files.txt
+paired_files_pretrain.txt
+paired_files_test.txt
+paired_files_trainval.txt
 lightning_logs/
 checkpoints/
+inference_audio/clean_audio_from_test_phase.wav

@@ -1,40 +1,41 @@
 import os
 import random
+import linecache
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-import linecache  # Import linecache for reading specific lines from files
 from video_preprocessing.video_preprocessor_simple import VideoPreprocessorSimple
 
-class PreprocessingDataset(Dataset):
-    def __init__(self, lrs3_root, dns_root, snr_db=0, transform=None, sample_rate=16000,
-                 mode_prob={'speaker': 0.5, 'noise': 0.5}, fixed_length=64000, upsampled_sample_rate=16000, fixed_frames=100, dataset_tag=None):
 
+class PreprocessingDataset(Dataset):
+    def __init__(self, lrs3_root, dns_root, snr_db=0, sample_rate=16000,
+                 mode_prob=None, fixed_length=64000,
+                 fixed_frames=100, dataset_tag=None):
         """
+        Data set with preprocessed data. Unique sets for train/trainval/test phases based on LRS3 root.
+        DNS file list created as well.
         Args:
-            lrs3_root (str): Path to the LRS3 dataset root directory.
-            dns_root (str): Path to the DNS dataset root directory.
-            snr_db (float): Desired Signal-to-Noise Ratio in decibels.
-            transform (callable, optional): Optional transform to be applied on a sample.
-            sample_rate (int): Desired sample rate for audio files.
-            mode_prob (dict): Probability distribution for selecting mode. Keys should be 'speaker' and 'noise'.
-            fixed_length (int): Fixed length in samples for audio waveforms.
-            fixed_frames (int): Fixed number of frames for video sequences.
+            lrs3_root: Path to the LRS3 dataset root directory.
+            dns_root: Path to the DNS dataset root directory.
+            snr_db: Desired Signal-to-Noise Ratio in decibels.
+            sample_rate: Desired sample rate for audio files.
+            mode_prob: Probability distribution for selecting mode. Keys should be 'speaker' and 'noise'.
+            fixed_length: Fixed length in samples for audio waveforms.
+            fixed_frames: Fixed number of frames for video sequences.
+            dataset_tag: Tag to distinguish between paired files list based on train/val/test phase
         """
+
+        if mode_prob is None:
+            mode_prob = {'speaker': 0.5, 'noise': 0.5}
         self.lrs3_root = lrs3_root
         self.dns_root = dns_root
         self.snr_db = snr_db
-        self.transform = transform
         self.sample_rate = sample_rate
         self.mode_prob = mode_prob
-        self.fixed_length = fixed_length  # Fixed length for audio samples
+        self.fixed_length = fixed_length
         self.target_frames = fixed_frames
-        self.upsampled_sample_rate = upsampled_sample_rate
 
-
-
-        # Save paired file paths to a single text file
-        # Use dataset_tag to create unique file names.
+        # Save paired file paths to a single text file with dataset_tag to create unique file names for phases
         tag = dataset_tag if dataset_tag is not None else os.path.basename(os.path.normpath(lrs3_root))
         self.paired_files_list = f'paired_files_{tag}.txt'
         self.dns_files_list = 'dns_files.txt'
@@ -56,6 +57,14 @@ class PreprocessingDataset(Dataset):
         self.video_processor = VideoPreprocessorSimple(target_frames=self.target_frames, fps=25.0)
 
     def _write_paired_file_list(self, root_dir, output_file, audio_ext='.wav', video_ext='.mp4'):
+        """
+        Setups file with audio (wav) and video (mp4) pairs to find the corresponding files easier
+        Args:
+            root_dir: Dir of LRS3 files based on phase
+            output_file: Path of files
+            audio_ext: Audio file format suffix
+            video_ext: Video file format suffix
+        """
         with open(output_file, 'w') as f:
             for speaker in os.listdir(root_dir):
                 speaker_dir = os.path.join(root_dir, speaker)
@@ -80,6 +89,13 @@ class PreprocessingDataset(Dataset):
                         print(f"Warning: Video file {video_path} does not exist for audio file {audio_path}")
 
     def _write_file_list(self, root_dir, output_file, file_extension='.wav'):
+        """
+        Creates a file list of all noise data to be handles in the same way as LRS3 data
+        Args:
+            root_dir: Dir of noise files
+            output_file: Path of dns files
+            file_extension: Noise audio file format suffix
+        """
         with open(output_file, 'w') as f:
             for root, _, files in os.walk(root_dir):
                 for file in sorted(files):
@@ -115,7 +131,7 @@ class PreprocessingDataset(Dataset):
 
         Args:
             waveform (torch.Tensor): Audio waveform tensor of shape [channels, time].
-            length (int): Desired length in samples.
+            length: Desired length in samples.
 
         Returns:
             torch.Tensor: Waveform tensor padded or truncated to the specified length.
@@ -178,6 +194,16 @@ class PreprocessingDataset(Dataset):
         return random.choice(files)
 
     def _create_interfering_waveform(self, mode, lrs3_file=None):
+        """
+        Creates a waveform for interfering, either from another speaker or noise file.
+        Args:
+            mode: Probability of interfering waveform being from speaker or nouse
+            lrs3_file: For speaker id, to pick a different speaker
+
+        Returns:
+            interfering_waveform (torch.Tensor): Waveform for fitting for interference
+            interference_type: String of interference type
+        """
         if mode == 'speaker':
             # Speaker Separation: Add speech from another speaker
             clean_speaker_id = self._extract_speaker_id(lrs3_file)
@@ -192,23 +218,23 @@ class PreprocessingDataset(Dataset):
             interfering_file = self._get_random_file_from_speaker(interfering_speaker_id)
             interfering_waveform, orig_sample_rate = torchaudio.load(interfering_file)
 
-            # check if waveform is multichannel; shape: [channels, time])
+            # Check if waveform is multichannel; shape: [channels, time])
             if interfering_waveform.shape[0] > 1:
                 interfering_waveform = interfering_waveform.mean(dim=0, keepdim=True)
 
-            # resample
+            # Resample to original sample rate
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
                                                                   new_freq=self.sample_rate)
             # Use standard deviation based normalization (as in the original model)
             mono = interfering_waveform.mean(dim=0, keepdim=True)
             std = mono.std(dim=-1, keepdim=True)
-            interfering_waveform = interfering_waveform / (std + 1e-3)  # using a small floor similar to the original floor
+            # Using a small floor similar to the original floor
+            interfering_waveform = interfering_waveform / (std + 1e-3)
 
             # Pad or truncate interfering waveform to fixed length
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
 
             interference_type = 'speaker'
-
 
         elif mode == 'noise':
             # Speech Enhancement: Add background noise from DNS
@@ -229,25 +255,24 @@ class PreprocessingDataset(Dataset):
             if retries > max_retries:
                 raise ValueError(f"All retries failed: Unable to find valid DNS file after {max_retries + 1} attempts.")
 
-            # check if waveform is multichannel; shape: [channels, time])
+            # Check if waveform is multichannel; shape: [channels, time]
             if interfering_waveform.shape[0] > 1:
                 interfering_waveform = interfering_waveform.mean(dim=0, keepdim=True)
 
-            # resample
+            # Resample
             interfering_waveform = torchaudio.functional.resample(interfering_waveform, orig_freq=orig_sample_rate,
                                                                   new_freq=self.sample_rate)
 
             # Use standard deviation based normalization (as in the original model)
             mono = interfering_waveform.mean(dim=0, keepdim=True)
             std = mono.std(dim=-1, keepdim=True)
-            interfering_waveform = interfering_waveform / (
-                        std + 1e-3)  # using a small floor similar to the original floor
+            # Using a small floor similar to the original floor
+            interfering_waveform = interfering_waveform / (std + 1e-3)
 
             # Pad or truncate interfering waveform to fixed length
             interfering_waveform = self.pad_or_truncate(interfering_waveform, self.fixed_length)
 
             interference_type = 'noise'
-
 
         else:
             raise ValueError("Invalid mode selected.")
@@ -255,16 +280,28 @@ class PreprocessingDataset(Dataset):
         return interfering_waveform, interference_type
 
     def _preprocess_audio(self, lrs3_file):
+        """
+        Preprocessing for one file of the LRS3 dataset. Creates an interference waveform and creates a mixture
+        of clean speech with the interference.
+
+        Args:
+            lrs3_file: Filepath to LRS3 files
+
+        Returns:
+            mixture: Mixed waveform of clean and interference waveform (with SNR)
+            speech_waveform: Original clean waveform
+            interfering_waveform: Interference waveform
+            interference_type: Type of interference (speaker or noise)
+        """
         # Load clean speech from LRS3
         speech_waveform, orig_sample_rate = torchaudio.load(lrs3_file)
 
-        # check if waveform is multichannel; shape: [channels, time])
+        # Check if waveform is multichannel; shape: [channels, time])
         if speech_waveform.shape[0] > 1:
             speech_waveform = speech_waveform.mean(dim=0, keepdim=True)
 
         speech_waveform = torchaudio.functional.resample(speech_waveform, orig_freq=orig_sample_rate,
                                                          new_freq=self.sample_rate)
-
 
         # Use standard deviation based normalization (as in the original model)
         mono = speech_waveform.mean(dim=0, keepdim=True)
@@ -281,13 +318,24 @@ class PreprocessingDataset(Dataset):
         # Mix speech and interference at desired SNR
         mixture = self.add_noise_with_snr(speech_waveform, interfering_waveform, self.snr_db)
 
+        return mixture, speech_waveform
 
-        return mixture, speech_waveform, interfering_waveform, interference_type
+    def _preprocess_video(self, file_path):
+        """
+        Calls VideoPreprocessorSimple to crop the video to 96x96. Sets frame rate.
+        Args:
+            file_path: Path to video of LRS3 set
 
-    def _preprocess_video(self, file_path: str):
+        Returns: Cropped preprocessed video
+        """
         return self.video_processor.crop_video_96_96(file_path)
 
     def __getitem__(self, idx):
+        """
+        Datasets __getitem__ class
+        Preprocesses audio and video for the corresponding sample.
+        Returns: Sample dict with encoded audio/video and original clean speech
+        """
         # Read the paired file paths from the text file
         paired_line = linecache.getline(self.paired_files_list, idx + 1).strip()
         if not paired_line:
@@ -295,19 +343,14 @@ class PreprocessingDataset(Dataset):
 
         audio_lrs3_file, video_lrs3_file = paired_line.split('\t')
 
+        # Preprocess video and audio
         preprocessed_video = self._preprocess_video(video_lrs3_file)
-        preprocessed_audio, speech_waveform, interfering_waveform, interference_type = self._preprocess_audio(
-            audio_lrs3_file)
+        preprocessed_audio, speech_waveform = self._preprocess_audio(audio_lrs3_file)
 
         sample = {
-            'encoded_audio': preprocessed_audio, # shape: [seq_len, channels]
+            'encoded_audio': preprocessed_audio,  # shape: [seq_len, channels]
             'encoded_video': preprocessed_video,  # shape: [batch_size, frames, features)
             'clean_speech': speech_waveform,  # shape: [1, samples]
-            'audio_file_path': audio_lrs3_file,
-            'video_file_path': video_lrs3_file
         }
-
-        if self.transform:
-            sample = self.transform(sample)
 
         return sample

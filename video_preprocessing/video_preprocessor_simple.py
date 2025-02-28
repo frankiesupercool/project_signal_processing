@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import random
 
+
 class VideoPreprocessorSimple:
 
     def __init__(self, target_frames=100, fps=25.0):
@@ -11,10 +12,10 @@ class VideoPreprocessorSimple:
         in the middle of the datasets videos.
 
         Args:
-            target_frames (int): Number of frames corresponding to the fixed audio duration.
+            target_frames (int): Number of frames corresponding to the fixed audio duration. (default 100 for 4 sec)
             fps (float): Frames per second of the videos.
         """
-        self.target_frames = target_frames  # 4 seconds × 25 FPS = 100 frames
+        self.target_frames = target_frames  # 2 seconds × 25 FPS = 50 frames
         self.fps = fps
 
     def crop_video_96_96(self, video_path):
@@ -151,8 +152,3 @@ class VideoPreprocessorSimple:
         start_x = max(width // 2 - (crop_width // 2), 0)
         start_y = max(height // 2 - (crop_height // 2), 0)
         return frame[start_y:start_y + crop_height, start_x:start_x + crop_width]
-
-
-
-
-

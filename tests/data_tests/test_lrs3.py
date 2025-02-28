@@ -225,7 +225,7 @@ def test_lrs3_files(folder, noise_folder, encoder):
                 wav_path = os.path.join(folder_name, filename)
 
                 # basic check on LRS3 files
-                if check_lrs3_audio(wav_path) == False:
+                if not check_lrs3_audio(wav_path):
                     print(f"Error with lrs file {wav_path}")
                 else:
                     count += 1
@@ -240,9 +240,7 @@ def test_lrs3_files(folder, noise_folder, encoder):
 
                 # pad or truncate check
                 speech_waveform = pad_or_truncate(speech_waveform, 64000)
-                #check_speech_waveform(speech_waveform, orig_sample_rate, wav_path)
 
-                # todo check between inferring and mixture?
                 # check mixture
                 mixture, interference_type = check_mixture(speech_waveform, wav_path, noise_folder)
 
@@ -253,10 +251,14 @@ def test_lrs3_files(folder, noise_folder, encoder):
 
 
 if __name__ == "__main__":
+    """
+    Pretest LRS3 data set for corrupt files, walk through preprocessing steps to identify broken files
+    Uses old denoiser setup!!!
+    """
     noise_folder = config.DNS_DATA_PATH
     root_folders = {config.PRETRAIN_DATA_PATH, config.TEST_DATA_PATH, config.TRAINVAL_DATA_PATH}
     
-    # setup encoder TODO double check setup
+    # setup encoder (old version)
     model = pretrained.dns64()
     encoder = model.encoder
 

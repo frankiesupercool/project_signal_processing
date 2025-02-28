@@ -1,11 +1,8 @@
 import os
 import torch
 import torch.nn as nn
-from numpy.lib.function_base import extract
 from torch import Tensor
-
 from video_encoding.models.video_encoder_model import VideoEncoder
-from utils.device_utils import get_device
 
 """Based on Lipreading using temporal convolutional networks (https://arxiv.org/pdf/2001.08702). With adapted
 implementation from:
@@ -13,11 +10,12 @@ implementation from:
 https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks
 """
 
+
 class VideoPreprocessingService(nn.Module):
 
     def __init__(self,
                  allow_size_mismatch: bool,
-                 model_path: str,
+                 lip_reading_model_path: str,
                  use_boundary: bool,
                  relu_type: str,
                  num_classes: int,
@@ -29,7 +27,7 @@ class VideoPreprocessingService(nn.Module):
 
         Args:
             allow_size_mismatch (bool):
-            model_path (str): Path to the model file that will be loaded.
+            lip_reading_model_path (str): Path to the model file that will be loaded.
             use_boundary (bool):
             relu_type (str):
             num_classes (int):
@@ -38,7 +36,7 @@ class VideoPreprocessingService(nn.Module):
         """
         super(VideoPreprocessingService, self).__init__()
         self.allow_size_mismatch = allow_size_mismatch
-        self.model_path = model_path
+        self.model_path = lip_reading_model_path
         self.use_boundary = use_boundary
         self.relu_type = relu_type
         self.num_classes = num_classes
@@ -53,12 +51,10 @@ class VideoPreprocessingService(nn.Module):
                           relu_type=self.relu_type,
                           use_boundary=self.use_boundary,
                           extract_feats=self.feature_extraction_mode)
-        #Load the model from the lrw_resnet18_dctcn_video_boundary.pth file
+        # Load the model from the lrw_resnet18_dctcn_video_boundary.pth file
         self.model = self.load_model(load_path=self.model_path,
                                      model=self.model,
                                      allow_size_mismatch=self.allow_size_mismatch)
-
-
 
     def create_model(self,
                      num_classes: int,
@@ -66,7 +62,7 @@ class VideoPreprocessingService(nn.Module):
                      backbone_type: str = 'resnet',
                      relu_type: str = 'relu',
                      use_boundary: bool = False,
-                     extract_feats:bool = True) -> VideoEncoder:
+                     extract_feats: bool = True) -> VideoEncoder:
         """
             Creates the model using the in the paper given specifications of using a resnet and swish relu.
             It is essential that extract_feats is set to True such that the model only does the feature extraction.
@@ -84,12 +80,11 @@ class VideoPreprocessingService(nn.Module):
         """
         # Initialise Model
         self.model = VideoEncoder(num_classes=num_classes,
-                           densetcn_options=densetcn_options,
-                           backbone_type=backbone_type,
-                           relu_type=relu_type,
-                           use_boundary=use_boundary,
-                           extract_feats=extract_feats)
-
+                                  densetcn_options=densetcn_options,
+                                  backbone_type=backbone_type,
+                                  relu_type=relu_type,
+                                  use_boundary=use_boundary,
+                                  extract_feats=extract_feats)
 
     def generate_encodings(self, data: Tensor) -> Tensor:
         """
@@ -103,8 +98,8 @@ class VideoPreprocessingService(nn.Module):
         return encoded
 
     @staticmethod
-    def load_model(load_path : str,
-                   model : VideoEncoder,
+    def load_model(load_path: str,
+                   model: VideoEncoder,
                    allow_size_mismatch=False, optimizer=None) -> VideoEncoder:
         """
             Load model from file
@@ -173,5 +168,3 @@ class VideoPreprocessingService(nn.Module):
             output = model(input_tensor, lengths=lengths)
 
         return output
-
-
