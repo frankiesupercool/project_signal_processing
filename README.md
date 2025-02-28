@@ -8,21 +8,8 @@ original paper.
 
 ## Setup
 
-For our initial trials, we used a pretrained denoiser version and therefore had to follow a defined environment setup 
-with a fixed order. 
-We kept this setup structure after modifying the U-Net Encoder-Decoder implementation. 
-Here’s how to set up the environment:
-### Create a conda environment from scratch
-1. `conda create -n project_sp python=3.11`
-2. `conda activate project_sp`
-3. `conda install conda-forge::pesq`
-4. `conda install ffmpeg=4.2.2`
-5. `pip install soundfile`
-6. `conda install pytorch`
-7. `conda install pytorch::torchaudio`
-8. `conda install numpy matplotlib`
-9. `conda install opencv`
-10. `conda install conda-forge::pytorch-lightning`
+To setup the conda environment for this project use the [environment.yml](environment.yml) by running: \
+`conda env create -f environment.yml`
 
 ### Data
 
