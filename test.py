@@ -8,7 +8,7 @@ from dataset_lightning.lightning_datamodule import DataModule
 from AV_transformer_model.AV_transformer import AVTransformer
 from AV_transformer_model.AV_module import AVTransformerLightningModule
 import config
-from pesq import pesq  # Added for PESQ metric computation
+from pesq import pesq
 
 
 def get_latest_checkpoint(checkpoint_dir):
@@ -136,6 +136,15 @@ def test():
     model_output_path = "clean_audio_long.wav"
     torchaudio.save(model_output_path, torch.tensor(concatenated_audio).unsqueeze(0), sample_rate=config.sample_rate)
     print(f"Enhanced clean audio saved to '{model_output_path}'")
+
+    markdown_filename = "test_results.md"
+    with open(markdown_filename, "w") as md_file:
+        md_file.write("# Test Results\n\n")
+        md_file.write("## Summary\n")
+        md_file.write(f"- *Test Results:* {test_results}\n")
+        md_file.write(f"- *PESQ Information:* {avg_pesq}\n")
+        md_file.write(f"- *Enhanced Audio File:* {model_output_path}\n")
+    print(f"Test results written to '{markdown_filename}'")
 
 
 if __name__ == "__main__":
