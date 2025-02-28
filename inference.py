@@ -117,7 +117,7 @@ def run_inference():
     plt.close()
 
     plt.figure(figsize=(10, 4))
-    plt.plot(preprocessed_audio, label="Preprocessed Audio", color="red")
+    plt.plot(preprocessed_audio, label="Preprocessed Audio", color="green")
     plt.xlabel("Time (samples)")
     plt.ylabel("Amplitude")
     plt.title("Preprocessed Audio (Inference)")
